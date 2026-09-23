@@ -20,7 +20,7 @@ describe("deterministic simulation", () => {
   it("calculates exact budget math", () => {
     expect(simulateScenario(cityDataset, a).budget).toEqual({total:1000,spent:820,remaining:180,exceeded:false});
     const d=copy(); d.budget=0.5;
-    for(const i of d.initiatives) i.cost=0.1;
+    for(const i of d.initiatives) { i.cost=0.1; i.budgetBreakdown=[{id:"test",label:"Test allocation",amount:0.1}]; }
     expect(simulateScenario(d,a).budget).toEqual({total:0.5,spent:0.5,remaining:0,exceeded:false});
   });
   it("rejects overspend without applying any impacts", () => {
@@ -67,7 +67,7 @@ describe("deterministic simulation", () => {
   });
   it("rejects malformed dataset inputs before simulation", () => {
     expect(()=>validateDataset(null)).toThrow("Invalid city dataset");
-    const cases: ((d:CityDataset)=>void)[]=[d=>{d.budget=NaN},d=>{d.districts=[]},d=>{d.districts[0].population=-1},d=>{d.districts[0].metrics.social=101},d=>{d.districts[1].id=d.districts[0].id},d=>{d.initiatives[0].cost=-1},d=>{d.initiatives[0].impacts[0].districtId="unknown"},d=>{d.initiatives[0].impacts[0].delta=Infinity},d=>{d.initiatives[1].id=d.initiatives[0].id},d=>{d.initiatives=d.initiatives.filter(i=>i.category!=="social")}];
+    const cases: ((d:CityDataset)=>void)[]=[d=>{d.budget=NaN},d=>{d.districts=[]},d=>{d.districts[0].population=-1},d=>{d.districts[0].metrics.social=101},d=>{d.districts[1].id=d.districts[0].id},d=>{d.initiatives[0].cost=-1},d=>{d.initiatives[0].impacts[0].districtId="unknown"},d=>{d.initiatives[0].impacts[0].delta=Infinity},d=>{d.initiatives[1].id=d.initiatives[0].id},d=>{d.initiatives=d.initiatives.filter(i=>i.category!=="social")},d=>{d.initiatives[0].budgetBreakdown=[]},d=>{d.initiatives[0].budgetBreakdown![0].amount+=1},d=>{d.initiatives[0].budgetBreakdownSource=undefined}];
     for(const mutate of cases){const d=copy();mutate(d);expect(()=>simulateScenario(d,a)).toThrow("Invalid city dataset");}
   });
 });

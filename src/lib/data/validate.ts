@@ -28,7 +28,22 @@ export function validateDataset(value: unknown): asserts value is CityDataset {
     if (initiativeIds.has(i.id as string)) fail("duplicate initiative id");
     initiativeIds.add(i.id as string); covered.add(i.category as string);
     if (!finite(i.cost) || i.cost < 0 || !Number.isSafeInteger(Math.round(i.cost * 1_000_000))) fail("cost must be finite and nonnegative");
+    if (!Array.isArray(i.budgetBreakdown) || !i.budgetBreakdown.length) fail("every initiative needs a budget breakdown");
+    if (i.budgetBreakdownSource !== "provided-data" && i.budgetBreakdownSource !== "simulation-assumption") fail("budget breakdown source is required");
+    const budgetItemIds = new Set<string>();
+    let breakdownUnits = 0;
+    for (const rawItem of i.budgetBreakdown as unknown[]) {
+      if (!object(rawItem) || !label(rawItem.id) || !label(rawItem.label) || !finite(rawItem.amount) || rawItem.amount < 0 || !Number.isSafeInteger(Math.round(rawItem.amount * 1_000_000))) fail("invalid budget item");
+      if (budgetItemIds.has(rawItem.id as string)) fail("duplicate budget item id");
+      budgetItemIds.add(rawItem.id as string);
+      if (rawItem.description !== undefined && typeof rawItem.description !== "string") fail("invalid budget item description");
+      breakdownUnits += Math.round((rawItem.amount as number) * 1_000_000);
+    }
+    if (breakdownUnits !== Math.round((i.cost as number) * 1_000_000)) fail("budget breakdown must equal initiative cost");
     if (i.description !== undefined && typeof i.description !== "string") fail("invalid description");
+    if (i.affectedDistricts !== undefined && (!Array.isArray(i.affectedDistricts) || i.affectedDistricts.some(id => !ids.has(id as string)))) fail("invalid affected districts");
+    if (i.implementationNotes !== undefined && (!Array.isArray(i.implementationNotes) || i.implementationNotes.some(note => !label(note)))) fail("invalid implementation notes");
+    if (i.implementationRisks !== undefined && (!Array.isArray(i.implementationRisks) || i.implementationRisks.some(risk => !label(risk)))) fail("invalid implementation risks");
     if (!Array.isArray(i.impacts)) fail("impacts must be an array");
     for (const impact of i.impacts as unknown[]) {
       if (!object(impact) || !ids.has(impact.districtId as string) || !category(impact.metric) || !finite(impact.delta)) fail("invalid impact target or delta");
