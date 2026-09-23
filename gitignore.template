@@ -1,0 +1,67 @@
+# Prompt — Feature Brainstorming
+
+Use this in a separate thread while the main Codex agent is building.
+
+```text
+We are participating in HackAlem.
+
+The primary Codex agent is currently implementing the critical MVP.
+
+Your job is NOT to modify the project.
+
+Act as a product strategist and technical hackathon architect.
+
+Read CASE.md and the current product concept.
+
+Generate potential features that could strengthen the solution.
+
+Prioritize features that:
+
+1. directly improve compliance with the official case
+2. demonstrate real agentic behavior
+3. produce a visible effect in a judge demo
+4. can likely be implemented by Codex in 10–30 minutes
+5. reuse the existing architecture
+6. require no new external infrastructure
+7. are technically real rather than visual gimmicks
+
+Avoid:
+- authentication unless required
+- dashboards with no meaningful functionality
+- unnecessary AI agents
+- new databases/services
+- social features
+- large architecture changes
+- features requiring new datasets we do not have
+- features that only make the UI prettier
+
+For every idea return:
+
+FEATURE
+What it does.
+
+WHY IT MATTERS
+Which case requirement or judging criterion it strengthens.
+
+DEMO
+What the judge would see in 20–30 seconds.
+
+IMPLEMENTATION
+Smallest technical implementation.
+
+TIME
+10 / 20 / 30 / 60+ minutes.
+
+RISK
+Low / Medium / High.
+
+DEPENDENCIES
+Any new APIs/packages/database changes.
+
+Do not recommend implementation yet.
+
+Finish by grouping ideas into:
+BUILD IF TIME
+BACKLOG
+REJECT
+```
