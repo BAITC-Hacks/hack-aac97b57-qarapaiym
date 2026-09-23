@@ -52,7 +52,7 @@ export function simulateScenario(dataset: CityDataset, selection: ScenarioSelect
   validateDataset(dataset);
   const errors=validateSelection(dataset,selection);
   const choices:Array<ScenarioSelection[number]>=Array.isArray(selection)?selection.filter(c=>c && typeof c==="object" && typeof c.initiativeId==="string").map(c=>({initiativeId:c.initiativeId,...(c.districtId!==undefined?{districtId:c.districtId}:{})})).sort((a,b)=>a.initiativeId.localeCompare(b.initiativeId)):[];
-  const selected=choices.flatMap(c=>{const i=dataset.initiatives.find(i=>i.id===c.initiativeId);return i?[{...i,effects:{...i.effects},...(c.districtId!==undefined?{districtId:c.districtId}:{})}]:[];});
+  const selected=choices.flatMap(c=>{const i=dataset.initiatives.find(i=>i.id===c.initiativeId);return i?[{...structuredClone(i),effects:{...i.effects},...(c.districtId!==undefined?{districtId:c.districtId}:{})}]:[];});
   const spent=selected.reduce((sum,i)=>sum+units(i.cost),0),total=units(dataset.budget);
   const base:SimulationResult={valid:errors.length===0,validationErrors:errors,budget:{total:total/1e6,spent:spent/1e6,remaining:(total-spent)/1e6,exceeded:spent>total},selection:choices,selectedInitiatives:selected,baseline:calculateSnapshot(dataset.districts),projected:null,delta:null,contributions:[],synergies:[]};
   if (errors.length) return base;

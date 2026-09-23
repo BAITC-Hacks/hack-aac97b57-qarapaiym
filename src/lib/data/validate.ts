@@ -28,6 +28,20 @@ export function validateDataset(value: unknown): asserts value is CityDataset {
     if (!label(i.id) || !label(i.name) || !CATEGORIES.includes(i.category as typeof CATEGORIES[number]) || initiativeIds.has(i.id as string)) fail("invalid initiative identity/category");
     initiativeIds.add(i.id as string); covered.add(i.category as string);
     if (!finite(i.cost) || i.cost < 0 || !Number.isSafeInteger(Math.round(i.cost * 1_000_000))) fail("invalid cost");
+    if (i.budgetBreakdown !== undefined || i.budgetBreakdownSource !== undefined) {
+    if (!Array.isArray(i.budgetBreakdown) || !i.budgetBreakdown.length) fail("every initiative needs a budget breakdown");
+    if (i.budgetBreakdownSource !== "provided-data" && i.budgetBreakdownSource !== "simulation-assumption") fail("budget breakdown source is required");
+    const budgetItemIds = new Set<string>();
+    let breakdownUnits = 0;
+    for (const rawItem of i.budgetBreakdown as unknown[]) {
+      if (!object(rawItem) || !label(rawItem.id) || !label(rawItem.label) || !finite(rawItem.amount) || rawItem.amount < 0 || !Number.isSafeInteger(Math.round(rawItem.amount * 1_000_000))) fail("invalid budget item");
+      if (budgetItemIds.has(rawItem.id as string)) fail("duplicate budget item id");
+      budgetItemIds.add(rawItem.id as string);
+      if (rawItem.description !== undefined && typeof rawItem.description !== "string") fail("invalid budget item description");
+      breakdownUnits += Math.round((rawItem.amount as number) * 1_000_000);
+    }
+    if (breakdownUnits !== Math.round((i.cost as number) * 1_000_000)) fail("budget breakdown must equal initiative cost");
+    }
     if (i.scope !== "district" && i.scope !== "city") fail("invalid scope");
     if (!finite(i.lag) || !Number.isInteger(i.lag) || i.lag < 0 || i.lag > (data.horizon as number)) fail("invalid lag");
     if (!object(i.effects) || !Object.keys(i.effects).length || Object.entries(i.effects).some(([m,v]) => !METRICS.includes(m as typeof METRICS[number]) || !finite(v))) fail("invalid effects");

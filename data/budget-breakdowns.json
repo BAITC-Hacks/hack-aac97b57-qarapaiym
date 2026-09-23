@@ -1,0 +1,17 @@
+{
+  "transport-bus": [["lane-marking", "Bus lane marking", 55], ["signal-priority", "Signal priority equipment", 60], ["bus-stops", "Stop upgrades", 40], ["rollout", "Installation and rollout", 25]],
+  "transport-junctions": [["design", "Junction design", 15], ["crossings", "Crossing upgrades", 40], ["signals", "Signal equipment", 30], ["installation", "Installation", 15]],
+  "transport-rail": [["track", "Track and right of way", 180], ["stations", "Station works", 100], ["vehicles", "Vehicle provision", 60], ["planning", "Planning reserve", 20]],
+  "greening-trees": [["saplings", "Trees and saplings", 35], ["soil", "Soil preparation", 30], ["irrigation", "Irrigation", 30], ["care", "Establishment care", 25]],
+  "greening-parks": [["landscaping", "Landscaping", 100], ["paths", "Paths and access", 55], ["lighting", "Park lighting", 35], ["care", "Maintenance reserve", 50]],
+  "greening-pockets": [["sites", "Site preparation", 20], ["planting", "Planting", 25], ["seating", "Seating and fixtures", 15], ["care", "Care reserve", 10]],
+  "social-clinics": [["fitout", "Clinic fit out", 90], ["equipment", "Medical equipment", 70], ["launch", "Staff launch costs", 30], ["reserve", "Contingency", 20]],
+  "social-schools": [["building", "Building works", 180], ["furnishings", "Furnishings", 60], ["access", "Access works", 40], ["launch", "Launch costs", 20]],
+  "social-outreach": [["units", "Mobile units", 40], ["staff", "Outreach staff", 35], ["materials", "Care materials", 15], ["logistics", "Logistics", 10]],
+  "safety-lighting": [["fixtures", "Lighting fixtures", 45], ["poles", "Poles", 30], ["wiring", "Wiring and installation", 25], ["reserve", "Maintenance reserve", 10]],
+  "safety-response": [["stations", "Station facilities", 100], ["vehicles", "Response vehicles", 75], ["equipment", "Response equipment", 35], ["training", "Training", 20]],
+  "safety-community": [["staff", "Team staffing", 30], ["training", "Training", 10], ["materials", "Outreach materials", 10], ["coordination", "Coordination", 10]],
+  "services-water": [["pipes", "Pipes and materials", 95], ["works", "Installation works", 60], ["testing", "Testing", 20], ["reserve", "Repair reserve", 25]],
+  "services-digital": [["software", "Service software", 30], ["hardware", "Service hardware", 20], ["training", "Staff training", 15], ["support", "Support reserve", 15]],
+  "services-waste": [["vehicles", "Collection vehicles", 70], ["containers", "Collection containers", 40], ["routing", "Route planning tools", 15], ["rollout", "Rollout", 25]]
+}
