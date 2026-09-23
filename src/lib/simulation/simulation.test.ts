@@ -53,9 +53,17 @@ describe("deterministic simulation", () => {
     expect(calculateSnapshot(districts.map(d=>({...d,population:0}))).overall).toBe(50);
   });
   it("rounds score once from unrounded category values", () => {
-    const r=simulateScenario(cityDataset,a);
-    expect(r.baseline.overall).toBe(53.2);
-    expect(r.projected.overall).toBeGreaterThan(r.baseline.overall);
+    const snapshot = calculateSnapshot([{
+      id: "rounding-fixture", name: "Rounding fixture", population: 1,
+      metrics: { transport: 50.049, greening: 50.049, social: 50.049, safety: 50.049, services: 50.149 },
+    }]);
+    expect(snapshot.byCategory).toEqual({ transport: 50, greening: 50, social: 50, safety: 50, services: 50.1 });
+    // The raw mean is 50.069 -> 50.1. Averaging displayed category values
+    // gives 50.02 -> 50.0, so premature rounding changes the result.
+    expect(snapshot.overall).toBe(50.1);
+    const roundedCategoryMean = Math.round(Object.values(snapshot.byCategory).reduce((sum, value) => sum + value, 0) / 5 * 10) / 10;
+    expect(roundedCategoryMean).toBe(50);
+    expect(snapshot.overall).not.toBe(roundedCategoryMean);
   });
   it("rejects malformed dataset inputs before simulation", () => {
     expect(()=>validateDataset(null)).toThrow("Invalid city dataset");
