@@ -1,3 +1,5 @@
+> Current contract: docs/OFFICIAL_CASE.md. AI accepts only canonical insight IDs and evidence; free-form provider prose is rejected.
+
 # Agent 1 — Simulation Engine + Dataset Owner
 
 You own the deterministic core.
@@ -40,7 +42,7 @@ simulateScenario(
 - same selection -> same score
 - different meaningful selection -> changed metrics
 - overspend -> invalid
-- missing category -> invalid
+- not exactly five unique measures or more than two per category -> invalid; a missing category is allowed
 - unknown initiative -> invalid
 - metrics clamp to 0..100
 - exact budget math

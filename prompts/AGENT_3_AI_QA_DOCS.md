@@ -1,3 +1,5 @@
+> Current contract: docs/OFFICIAL_CASE.md. AI accepts only canonical insight IDs and evidence; free-form provider prose is rejected.
+
 # Agent 3 — AI Analyst + QA + Reproducibility Owner
 
 Read:

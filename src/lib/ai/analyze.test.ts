@@ -1,3 +1,4 @@
+import { buildInsightCatalog, renderInsights } from './insights';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { analyzeScenario, validateAnalysis } from './analyze';
 import { POST } from '@/app/api/analyze/route';
@@ -11,7 +12,10 @@ const projected = result.projected!;
 const ranked = [...CATEGORIES].sort((a,b) => projected.byCategory[b] - projected.byCategory[a]);
 const gains = [...CATEGORIES].sort((a,b) => (projected.byCategory[b]-result.baseline.byCategory[b]) - (projected.byCategory[a]-result.baseline.byCategory[a]));
 const evidence = { budgetSpent: result.budget.spent, budgetRemaining: result.budget.remaining, aqol: projected.overall, highestCategory: ranked[0], lowestCategory: ranked[4], largestGainCategory: gains[0], initiativeIds: result.selectedInitiatives.map(i=>i.id) };
-function provider(value: unknown = {...analysis, evidence}) { return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(value) }] }] }); }
+const catalog = buildInsightCatalog(result);
+const chosen = { summary: catalog.summary[0].id, strengths: [catalog.strengths[0].id], risks: [catalog.risks[0].id], tradeoffs: [catalog.tradeoffs[0].id], recommendations: [catalog.recommendations[0].id] };
+const safeAnalysis = renderInsights(chosen, catalog);
+function provider(value: unknown = {...chosen, evidence}) { return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(value) }] }] }); }
 function request(value: unknown) { return new Request('http://localhost/api/analyze', { method: 'POST', body: JSON.stringify(value) }); }
 describe('AI boundary', () => {
   beforeEach(() => vi.stubEnv('OPENAI_API_KEY', 'test-key-not-real'));
@@ -24,7 +28,7 @@ describe('AI boundary', () => {
     expect(result.valid).toBe(true);
     const mock = vi.fn().mockResolvedValue(provider()); vi.stubGlobal('fetch', mock);
     const response = await POST(request(result));
-    expect(response.status).toBe(200); expect(await response.json()).toEqual(analysis);
+    expect(response.status).toBe(200); expect(await response.json()).toEqual(safeAnalysis);
     const body = JSON.parse(mock.mock.calls[0][1].body);
     expect(body.text.format.strict).toBe(true); expect(body.store).toBe(false);
     expect(JSON.parse(body.input).scenario).toEqual(result);
@@ -38,11 +42,41 @@ describe('AI boundary', () => {
   });
   it('rejects incorrect scores, rankings and initiative evidence even with valid prose', async () => {
     for (const bad of [undefined, {...evidence, aqol:99.9}, {...evidence, budgetSpent:1}, {...evidence, highestCategory:ranked[4]}, {...evidence, initiativeIds:Array(5).fill(evidence.initiativeIds[0])}]) {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(provider({...analysis, evidence:bad})));
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(provider({...chosen, evidence:bad})));
       const response = await POST(request(result));
       expect(response.status).toBe(502);
       expect((await response.json()).code).toBe('INVALID_AI_OUTPUT');
     }
+  });
+  it.each([
+    ['false number', {...chosen, summary: 'Score is 99.99'}],
+    ['false category count', {...chosen, strengths: ['All 5 categories improved']}],
+    ['unsupported metric effect', {...chosen, strengths: ['M7 improved air quality']}],
+    ['unknown district', {...chosen, risks: ['Koktal is weakest']}],
+    ['unknown initiative', {...chosen, recommendations: ['M99']}],
+    ['sixth initiative', {...chosen, recommendations: ['Add M2 as a sixth measure']}],
+    ['invented statistics', {...chosen, summary: 'Astana population is 9000000'}],
+    ['invented support', {...chosen, strengths: ['Public support is 80 percent']}],
+    ['extra prose with correct IDs', {...chosen, prose: 'False facts'}],
+    ['unknown recommendation properties', {...chosen, recommendations: [{id:chosen.recommendations[0], rationale:'False'}]}],
+    ['unsupported unchanged category', {...chosen, strengths:['gain-transport']}],
+    ['empty output', {}],
+    ['duplicate insights', {...chosen, strengths:[chosen.strengths[0],chosen.strengths[0]]}],
+  ])('rejects correct evidence plus %s', async (_name, unsafe) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(provider({...unsafe, evidence})));
+    const before = JSON.stringify(result);
+    const response = await POST(request(result));
+    expect(response.status).toBe(502);
+    expect((await response.json()).code).toBe('INVALID_AI_OUTPUT');
+    expect(JSON.stringify(result)).toBe(before);
+  });
+  it('renders only catalog text and all recommended alternatives obey official rules', () => {
+    expect(safeAnalysis.summary).toBe(catalog.summary[0].text);
+    expect(catalog.strengths.map(i=>i.id)).not.toContain('gain-transport');
+    expect(catalog.tradeoffs.map(i=>i.id)).toContain('unchanged-transport');
+    expect(catalog.risks.map(i=>i.id)).not.toContain('critical-remain');
+    expect(catalog.recommendations.length).toBeGreaterThan(0);
+    expect(safeAnalysis.recommendations[0].rationale).toContain('вместо');
   });
   it('rejects tampering, missing choices, unknown IDs and bad bodies before provider call', async () => {
     const mock = vi.fn(); vi.stubGlobal('fetch', mock);
