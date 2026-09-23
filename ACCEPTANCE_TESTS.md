@@ -1,10 +1,12 @@
 # Acceptance Tests
 
+Source: `docs/OFFICIAL_CASE.md`, supplied 2026-09-23. AT-02 was corrected from the earlier internal one-per-category assumption to the official detailed rule; this is not a waiver of an official requirement.
+
 ## AT-01 Same starting conditions
 Every run starts from the same fixed budget and baseline data.
 
 ## AT-02 Five decisions
-Submission requires exactly one initiative for each category.
+Submission requires exactly five unique measures, at most two per category (at least three categories), valid district targets, and no target for city measures.
 
 ## AT-03 Budget control
 Overspend is invalid and cannot be submitted.
@@ -35,3 +37,12 @@ Production build succeeds.
 
 ## AT-12 Demo proof
 Scenario A and Scenario B produce visibly different outputs when decisions differ.
+
+## AT-13 Official model
+Budget100; five official districts and shares; ten indicators; M1–M14 catalog. Baseline52.55768; official cost95 example56.54307 before display rounding.
+
+## AT-14 Effect mechanics
+Apply horizon8/lag, all three fixed synergies, all three incompatibilities, clip after accumulation, official weights/weakest-district term/strictly-below40 penalty.
+
+## AT-15 Invalid plan
+No projected score or delta for any invalid selection. Exact100 valid;101 invalid. Order does not affect result.

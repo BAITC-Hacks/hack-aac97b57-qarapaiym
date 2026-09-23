@@ -5,11 +5,12 @@ import { cityDataset } from '@/lib/data';
 import { simulateScenario } from '@/lib/simulation';
 import { CATEGORIES, type ScenarioSelection } from '@/types/city';
 const analysis = { summary: 'Synthetic scenario improves supplied metrics.', strengths: ['Transport improves.'], risks: ['Weak metrics remain.'], tradeoffs: ['Spent funds cannot be reused.'], recommendations: [{ title: 'Review transport', rationale: 'Compare supplied values.', category: 'transport' }] };
-const selection = Object.fromEntries(CATEGORIES.map(category => [category, [...cityDataset.initiatives].filter(item => item.category === category).sort((a,b) => a.cost-b.cost)[0].id])) as ScenarioSelection;
+const selection: ScenarioSelection = [{initiativeId:'M7',districtId:'nura'},{initiativeId:'M8',districtId:'nura'},{initiativeId:'M10',districtId:'nura'},{initiativeId:'M12'},{initiativeId:'M5',districtId:'saryarka'}];
 const result = simulateScenario(cityDataset, selection);
-const ranked = [...CATEGORIES].sort((a,b) => result.projected.byCategory[b] - result.projected.byCategory[a]);
-const gains = [...CATEGORIES].sort((a,b) => (result.projected.byCategory[b]-result.baseline.byCategory[b]) - (result.projected.byCategory[a]-result.baseline.byCategory[a]));
-const evidence = { budgetSpent: result.budget.spent, budgetRemaining: result.budget.remaining, aqol: result.projected.overall, highestCategory: ranked[0], lowestCategory: ranked[4], largestGainCategory: gains[0], initiativeIds: result.selectedInitiatives.map(i=>i.id) };
+const projected = result.projected!;
+const ranked = [...CATEGORIES].sort((a,b) => projected.byCategory[b] - projected.byCategory[a]);
+const gains = [...CATEGORIES].sort((a,b) => (projected.byCategory[b]-result.baseline.byCategory[b]) - (projected.byCategory[a]-result.baseline.byCategory[a]));
+const evidence = { budgetSpent: result.budget.spent, budgetRemaining: result.budget.remaining, aqol: projected.overall, highestCategory: ranked[0], lowestCategory: ranked[4], largestGainCategory: gains[0], initiativeIds: result.selectedInitiatives.map(i=>i.id) };
 function provider(value: unknown = {...analysis, evidence}) { return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(value) }] }] }); }
 function request(value: unknown) { return new Request('http://localhost/api/analyze', { method: 'POST', body: JSON.stringify(value) }); }
 describe('AI boundary', () => {
@@ -27,8 +28,13 @@ describe('AI boundary', () => {
     const body = JSON.parse(mock.mock.calls[0][1].body);
     expect(body.text.format.strict).toBe(true); expect(body.store).toBe(false);
     expect(JSON.parse(body.input).scenario).toEqual(result);
+    expect(JSON.parse(body.input).facts.formulaComponents.after.criticalCount).toBe(0);
+    expect(JSON.parse(body.input).facts.contributions).toEqual(result.contributions);
+    expect(JSON.parse(body.input).facts.synergies).toEqual(result.synergies);
+    expect(JSON.parse(body.input).suppliedCatalog).toEqual(cityDataset.initiatives);
+    expect(projected.overall).toBe(56.54);
     expect(JSON.parse(body.input).facts.highestCategories).toContain(ranked[0]);
-    expect(body.text.format.schema.properties.evidence.properties.aqol.enum).toEqual([result.projected.overall]);
+    expect(body.text.format.schema.properties.evidence.properties.aqol.enum).toEqual([projected.overall]);
   });
   it('rejects incorrect scores, rankings and initiative evidence even with valid prose', async () => {
     for (const bad of [undefined, {...evidence, aqol:99.9}, {...evidence, budgetSpent:1}, {...evidence, highestCategory:ranked[4]}, {...evidence, initiativeIds:Array(5).fill(evidence.initiativeIds[0])}]) {
@@ -41,8 +47,19 @@ describe('AI boundary', () => {
   it('rejects tampering, missing choices, unknown IDs and bad bodies before provider call', async () => {
     const mock = vi.fn(); vi.stubGlobal('fetch', mock);
     const unknown = structuredClone(result); unknown.selectedInitiatives[0].id = 'unknown';
-    for (const value of [{...result,delta:result.delta+1},{...result,selectedInitiatives:[]},unknown,null]) expect((await POST(request(value))).status).toBe(400);
+    for (const value of [{...result,delta:result.delta!+1},{...result,selectedInitiatives:[]},unknown,null]) expect((await POST(request(value))).status).toBe(400);
     for (const body of ['{', 'x'.repeat(50_001)]) expect((await POST(new Request('http://localhost/api/analyze',{method:'POST',body}))).status).toBe(400);
+    expect(mock).not.toHaveBeenCalled();
+  });
+  it('rejects forged targets, duplicate measures, and overbudget results before the provider', async () => {
+    const mock = vi.fn(); vi.stubGlobal('fetch', mock);
+    const forgedTarget = structuredClone(result);
+    forgedTarget.selection.find(item => item.initiativeId === 'M7')!.districtId = 'esil';
+    const duplicate = simulateScenario(cityDataset, [...selection.slice(0, 4), selection[0]]);
+    const over = simulateScenario(cityDataset, [{initiativeId:'M1',districtId:'nura'},{initiativeId:'M2'},{initiativeId:'M5',districtId:'saryarka'},{initiativeId:'M6'},{initiativeId:'M14'}]);
+    expect(over.budget.spent).toBe(101); expect(over.projected).toBeNull();
+    for (const value of [forgedTarget, duplicate, over]) expect((await POST(request(value))).status).toBe(400);
+    await expect(analyzeScenario(over)).rejects.toMatchObject({status:400,code:'INVALID_SCENARIO'});
     expect(mock).not.toHaveBeenCalled();
   });
   it('reports missing key without mutating simulation', async () => {
@@ -67,6 +84,6 @@ describe('AI boundary', () => {
   it('aborts slow requests', async () => {
     vi.useFakeTimers(); vi.stubGlobal('fetch',vi.fn((_url, options) => new Promise((_resolve,reject) => { options.signal.addEventListener('abort',() => reject(new Error('aborted'))); })));
     const check = expect(analyzeScenario(result)).rejects.toMatchObject({status:504,code:'AI_TIMEOUT'});
-    await vi.advanceTimersByTimeAsync(25_000); await check;
+    await vi.advanceTimersByTimeAsync(60_000); await check;
   });
 });

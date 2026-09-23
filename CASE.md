@@ -1,43 +1,11 @@
 # CASE — «Аким на 5 часов»
 
-## Goal
-Build an AI city-management simulator where all users start with the same fixed budget and same synthetic district data, make 5 decisions, and receive an Astana Quality of Life Score plus AI analysis.
+Источник истины — полный текст задания, предоставленный командой 2026-09-23: [OFFICIAL_CASE.md](docs/OFFICIAL_CASE.md). Этот файл заменяет прежнее внутреннее предположение о бюджете 1 000 и одной мере на каждую сферу.
 
-## Mandatory categories
-- transport
-- greening
-- social infrastructure
-- safety
-- city services
+Обязательно: одинаковые 100 условных единиц, исходные пять районов/десять показателей, каталог M1–M14; ровно пять уникальных мер; максимум две в одной сфере; обязательный район для районных мер и отсутствие района для городских; бюджет, несовместимости, лаги и синергии; официальный Score с весами, худшим районом и штрафом за показатели ниже 40. Невалидный сценарий не получает Score.
 
-## Must-have
-- fixed virtual budget
-- one decision in each of 5 categories
-- budget overrun prevention
-- AI analysis
-- deterministic Astana Quality of Life Score
-- strengths, risks, trade-offs and consequences
-- changing decisions changes the result
+LLM объясняет рассчитанные факты, сильные стороны, риски, последствия и компромиссы. Он не рассчитывает и не заменяет Score. UI позволяет изменить район/меру и пересчитать результат. Синтетическая природа данных раскрывается.
 
-## Core rule
-The score is calculated by deterministic code, NOT by the LLM.
-AI only explains the already-calculated scenario.
+Ключевой пример: M7 Нура, M8 Нура, M10 Нура, M12 город, M5 Сарыарка. Стоимость95, Score56.54307. База52.55768.
 
-## Main judge scenario
-1. Open app and see fixed budget + baseline.
-2. Select one initiative per category.
-3. Budget updates live.
-4. Overspend is blocked.
-5. Submit valid scenario.
-6. Simulation calculates before/after metrics and AQoL.
-7. AI explains strengths, risks, trade-offs and recommendations.
-8. Change a decision and rerun.
-9. Score/metrics change.
-
-## Out of scope until MVP is complete
-- auth
-- cloud DB
-- multiplayer
-- real-time external APIs
-- complex maps
-- slide generation
+Подробное правило «не более2 мер одной сферы» и валидный пример уточняют общую вводную о пяти направлениях. Не требуется ровно одна мера в каждой сфере.

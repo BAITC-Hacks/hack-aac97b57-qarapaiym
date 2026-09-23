@@ -1,11 +1,7 @@
-# Synthetic demo dataset
+# Синтетические данные официального кейса
 
-`city-demo.json` was authored for this prototype. No supplied official district dataset or official scoring weights were available. District names provide Astana context; populations, metrics, initiative costs, and impacts are invented. This is not a forecast or a claim about actual municipal performance.
+`city-demo.json` перенесён из полного текста задания, предоставленного командой 2026-09-23 (`docs/OFFICIAL_CASE.md`). Пять условных районов с долями населения, десять показателей0–100, 14 мер M1–M14. Это не официальная статистика Астаны и не прогноз. Цены — условные единицы; бюджет100.
 
-Every user starts with 1,000 million KZT. All costs use million KZT. Metrics use 0–100, higher is better. Three initiatives per category expose cost/benefit and cross-category trade-offs. Districts starting below 50 receive two extra points of primary benefit. Impacts describe an illustrative single planning period, with no time-dependent dynamics.
+Районные меры требуют выбранный район, городские применяются ко всем. Полные эффекты умножаются на(8−lag)/8. Синергии и несовместимости заданы в движке по кейсу. Веса десяти показателей — в типах. После суммирования эффектов и синергий применяется clamp0–100.
 
-Category scores are population-weighted district means when all populations are present and their sum is positive; otherwise every district has equal weight. AQoL is the equal mean of the five unrounded category averages. Displayed category scores, AQoL, and AQoL delta are rounded to one decimal. All impacts are summed before clamping metrics to 0–100. Invalid scenarios preserve the baseline and apply no impacts. Money is accounted for in integer tenge (one millionth of the displayed unit).
-
-Demo A: transport-bus, greening-trees, social-clinics, safety-lighting, services-water (820 million KZT).
-Demo B: transport-junctions, greening-parks, social-outreach, safety-community, services-waste (650 million KZT).
-Overspend example: transport-rail, greening-parks, social-schools, safety-response, services-water (1,330 million KZT).
+Score=.7×средневзвешенный районный балл+.3×худший районный балл−число показателей строго ниже40. Без промежуточного округления. Базовый Score52.55768. Официальный пример за95 даёт56.54307. Показанные пользователю значения округлены до двух знаков.

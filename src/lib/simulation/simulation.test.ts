@@ -1,73 +1,64 @@
 import { describe, expect, it } from "vitest";
 import { cityDataset, validateDataset } from "../data";
-import { calculateSnapshot, simulateScenario } from ".";
-import { CATEGORIES, type CityDataset, type ScenarioSelection } from "../../types/city";
-const a: ScenarioSelection = { transport: "transport-bus", greening: "greening-trees", social: "social-clinics", safety: "safety-lighting", services: "services-water" };
-const b: ScenarioSelection = { transport: "transport-junctions", greening: "greening-parks", social: "social-outreach", safety: "safety-community", services: "services-waste" };
-const copy = (): CityDataset => structuredClone(cityDataset);
-describe("deterministic simulation", () => {
-  it("starts with a fixed, non-mutated baseline and repeats exactly", () => {
-    const before = JSON.stringify(cityDataset);
-    expect(simulateScenario(cityDataset, a)).toEqual(simulateScenario(cityDataset, a));
-    expect(JSON.stringify(cityDataset)).toBe(before);
-  });
-  it("meaningful decisions change the metrics and AQoL", () => {
-    const first = simulateScenario(cityDataset, a), second = simulateScenario(cityDataset, b);
-    expect(first.valid).toBe(true); expect(second.valid).toBe(true);
-    expect(first.projected).not.toEqual(second.projected);
-    expect(first.projected.overall).not.toBe(second.projected.overall);
-  });
-  it("calculates exact budget math", () => {
-    expect(simulateScenario(cityDataset, a).budget).toEqual({total:1000,spent:820,remaining:180,exceeded:false});
-    const d=copy(); d.budget=0.5;
-    for(const i of d.initiatives) i.cost=0.1;
-    expect(simulateScenario(d,a).budget).toEqual({total:0.5,spent:0.5,remaining:0,exceeded:false});
-  });
-  it("rejects overspend without applying any impacts", () => {
-    const result = simulateScenario(cityDataset, { transport:"transport-rail",greening:"greening-parks",social:"social-schools",safety:"safety-response",services:"services-water" });
-    expect(result.valid).toBe(false); expect(result.budget.spent).toBe(1330);
-    expect(result.projected).toEqual(result.baseline); expect(result.delta).toBe(0);
-  });
-  it.each(CATEGORIES)("requires the %s decision", category => {
-    const input = {...a}; delete (input as Partial<ScenarioSelection>)[category];
-    expect(simulateScenario(cityDataset,input).valid).toBe(false);
-  });
-  it("rejects unknown IDs, mismatched categories, extra categories, and null input", () => {
-    expect(simulateScenario(cityDataset,{...a,social:"bogus"}).valid).toBe(false);
-    expect(simulateScenario(cityDataset,{...a,safety:a.transport}).valid).toBe(false);
-    expect(simulateScenario(cityDataset,{...a,extra:"bogus"} as ScenarioSelection).valid).toBe(false);
-    expect(simulateScenario(cityDataset,null as unknown as ScenarioSelection).valid).toBe(false);
-  });
-  it("clamps accumulated impacts, at both limits", () => {
-    const d=copy(); const i=d.initiatives.find(i=>i.id===a.transport)!;
-    i.impacts=[{districtId:d.districts[0].id,metric:"transport",delta:1000},{districtId:d.districts[0].id,metric:"greening",delta:-1000}];
-    const r=simulateScenario(d,a);
-    expect(r.projected.districts[0].metrics.transport).toBe(100);
-    expect(r.projected.districts[0].metrics.greening).toBe(0);
-  });
-  it("weights populated districts and uses equal weights if any population is missing", () => {
-    const metrics=(v:number)=>Object.fromEntries(CATEGORIES.map(c=>[c,v])) as CityDataset["districts"][number]["metrics"];
-    const districts=[{id:"a",name:"A",population:1,metrics:metrics(20)},{id:"b",name:"B",population:3,metrics:metrics(80)}];
-    expect(calculateSnapshot(districts).overall).toBe(65);
-    expect(calculateSnapshot([{...districts[0],population:undefined},districts[1]]).overall).toBe(50);
-    expect(calculateSnapshot(districts.map(d=>({...d,population:0}))).overall).toBe(50);
-  });
-  it("rounds score once from unrounded category values", () => {
-    const snapshot = calculateSnapshot([{
-      id: "rounding-fixture", name: "Rounding fixture", population: 1,
-      metrics: { transport: 50.049, greening: 50.049, social: 50.049, safety: 50.049, services: 50.149 },
-    }]);
-    expect(snapshot.byCategory).toEqual({ transport: 50, greening: 50, social: 50, safety: 50, services: 50.1 });
-    // The raw mean is 50.069 -> 50.1. Averaging displayed category values
-    // gives 50.02 -> 50.0, so premature rounding changes the result.
-    expect(snapshot.overall).toBe(50.1);
-    const roundedCategoryMean = Math.round(Object.values(snapshot.byCategory).reduce((sum, value) => sum + value, 0) / 5 * 10) / 10;
-    expect(roundedCategoryMean).toBe(50);
-    expect(snapshot.overall).not.toBe(roundedCategoryMean);
-  });
-  it("rejects malformed dataset inputs before simulation", () => {
-    expect(()=>validateDataset(null)).toThrow("Invalid city dataset");
-    const cases: ((d:CityDataset)=>void)[]=[d=>{d.budget=NaN},d=>{d.districts=[]},d=>{d.districts[0].population=-1},d=>{d.districts[0].metrics.social=101},d=>{d.districts[1].id=d.districts[0].id},d=>{d.initiatives[0].cost=-1},d=>{d.initiatives[0].impacts[0].districtId="unknown"},d=>{d.initiatives[0].impacts[0].delta=Infinity},d=>{d.initiatives[1].id=d.initiatives[0].id},d=>{d.initiatives=d.initiatives.filter(i=>i.category!=="social")}];
-    for(const mutate of cases){const d=copy();mutate(d);expect(()=>simulateScenario(d,a)).toThrow("Invalid city dataset");}
-  });
+import { calculateSnapshot, simulateScenario, validateSelection } from ".";
+import { METRICS, type CityDataset, type ScenarioSelection } from "../../types/city";
+const choice=(initiativeId:string,districtId?:string)=>({initiativeId,...(districtId?{districtId}:{})});
+const example:ScenarioSelection=[choice("M7","nura"),choice("M8","nura"),choice("M10","nura"),choice("M12"),choice("M5","saryarka")];
+const cheap:ScenarioSelection=[choice("M9","nura"),choice("M11","nura"),choice("M10","nura"),choice("M12"),choice("M4","esil")];
+const copy=():CityDataset=>structuredClone(cityDataset);
+describe("official simulation",()=>{
+ it("matches official baseline using ten indicators and unrounded arithmetic",()=>{
+  const s=calculateSnapshot(cityDataset.districts);
+  expect(s.overall).toBe(52.56);expect(s.weightedAverage).toBe(56.86);expect(s.worstDistrictScore).toBe(49.18);expect(s.criticalCount).toBe(2);
+  expect(s.districts.map(d=>d.score)).toEqual([62.99,57.06,54.65,56.63,49.18]);
+ });
+ it("matches cost95 example including lag, district target and synergy",()=>{
+  const r=simulateScenario(cityDataset,example);
+  expect(r.valid).toBe(true);expect(r.budget.spent).toBe(95);expect(r.projected!.overall).toBe(56.54);expect(r.delta).toBe(3.99);expect(r.projected!.criticalCount).toBe(0);
+  const n=r.projected!.districts.find(d=>d.districtId==='nura')!;
+  expect(n.metrics.S1).toBe(48);expect(n.metrics.S2).toBe(43.75);expect(n.metrics.B1).toBe(67.5);
+  expect(r.projected!.districts[0].metrics.S1).toBe(48);
+  expect(r.synergies).toEqual([{initiativeIds:['M10','M12'],impacts:[{districtId:'nura',metric:'B1',delta:2}]}]);
+ });
+ it("accepts cheapest plan at61 and different choices change score",()=>{
+  const r=simulateScenario(cityDataset,cheap);expect(r.valid).toBe(true);expect(r.budget.spent).toBe(61);expect(r.projected!.overall).not.toBe(simulateScenario(cityDataset,example).projected!.overall);
+ });
+ it("is deterministic, immutable, and order invariant",()=>{
+  const before=JSON.stringify(cityDataset);expect(simulateScenario(cityDataset,example)).toEqual(simulateScenario(cityDataset,[...example].reverse()));expect(JSON.stringify(cityDataset)).toBe(before);
+ });
+ it("rejects incomplete, overfull, repeats, unknown and malformed choices without a score",()=>{
+  const plans=[example.slice(1),[...example,choice('M2')],[...cheap.slice(0,4),cheap[0]],[...cheap.slice(0,4),choice('bogus')],null as unknown as ScenarioSelection,[null] as unknown as ScenarioSelection];
+  for(const plan of plans){const r=simulateScenario(cityDataset,plan);expect(r.valid).toBe(false);expect(r.validationErrors.length).toBeGreaterThan(0);expect(r.projected).toBeNull();expect(r.delta).toBeNull();expect(r.contributions).toEqual([]);}
+ });
+ it("validates district and city targets",()=>{
+  for(const c of [choice('M7'),choice('M7','missing'),choice('M12','nura')]) expect(validateSelection(cityDataset,[c],false).length).toBeGreaterThan(0);
+  expect(validateSelection(cityDataset,[choice('M7','nura')],false)).toEqual([]);
+ });
+ it("limits category to two while allowing official two-social example",()=>{
+  expect(validateSelection(cityDataset,[choice('M7','nura'),choice('M8','nura'),choice('M9','nura')],false)).toContain('Не более 2 мер одного направления.');
+ });
+ it("rejects all three conflicts and permits different district exceptions",()=>{
+  expect(validateSelection(cityDataset,[choice('M1','esil'),choice('M3','nura')],false).some(e=>e.includes('Несовместимы'))).toBe(true);
+  for(const [a,b] of [['M4','M7'],['M5','M13']]){
+   expect(validateSelection(cityDataset,[choice(a,'nura'),choice(b,'nura')],false).some(e=>e.includes('Несовместимы'))).toBe(true);
+   expect(validateSelection(cityDataset,[choice(a,'nura'),choice(b,'esil')],false)).toEqual([]);
+  }
+ });
+ it("accepts exact budget and rejects overspend",()=>{
+  const d=copy();d.budget=95;expect(simulateScenario(d,example).valid).toBe(true);d.budget=94;const r=simulateScenario(d,example);expect(r.valid).toBe(false);expect(r.budget.exceeded).toBe(true);expect(r.projected).toBeNull();
+ });
+ it("does not reward unused budget",()=>{const d=copy();d.budget=1000;expect(simulateScenario(d,cheap).projected).toEqual(simulateScenario(cityDataset,cheap).projected);});
+ it("applies all fixed synergies without lag scaling",()=>{
+  for(const [a,b,m,target] of [['M1','M2','T1','M1'],['M5','M6','E2','M5']] as const){
+   const plan=[choice(a,'saryarka'),choice(b),choice('M9','nura'),choice('M11','nura'),choice('M12')];
+   const r=simulateScenario(cityDataset,plan);expect(r.valid).toBe(true);expect(r.synergies).toContainEqual({initiativeIds:[a,b],impacts:[{districtId:'saryarka',metric:m,delta:2}]});expect(r.contributions.find(c=>c.initiativeId===target)!.fraction).toBeGreaterThan(0);
+  }
+ });
+ it("clips after effects and treats exactly40 as noncritical",()=>{
+  const d=copy();d.initiatives.find(i=>i.id==='M9')!.effects={T1:1000,E1:-1000};const r=simulateScenario(d,cheap);const n=r.projected!.districts.find(d=>d.districtId==='nura')!;expect(n.metrics.T1).toBe(100);expect(n.metrics.E1).toBe(0);
+  const uniform={id:'test',name:'test',population:1,metrics:Object.fromEntries(METRICS.map(m=>[m,40])) as CityDataset['districts'][number]['metrics']};expect(calculateSnapshot([uniform]).criticalCount).toBe(0);uniform.metrics.T1=39.999;expect(calculateSnapshot([uniform]).criticalCount).toBe(1);
+ });
+ it("validates malformed dataset structures",()=>{
+  expect(()=>validateDataset(null)).toThrow();for(const change of [(d:CityDataset)=>{d.districts[0].population=.1},(d:CityDataset)=>{d.initiatives[0].lag=9},(d:CityDataset)=>{d.districts[0].metrics.T1=101}]){const d=copy();change(d);expect(()=>validateDataset(d)).toThrow();}
+ });
 });

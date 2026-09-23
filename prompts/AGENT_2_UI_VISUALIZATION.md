@@ -40,7 +40,7 @@ Each initiative shows:
 - cost
 - select action
 
-Exactly one per category.
+Exactly five unique measures; at most two per category. District measures require a district; city measures have no district. Follow docs/OFFICIAL_CASE.md.
 
 4. Budget behavior
    - live spent/remaining

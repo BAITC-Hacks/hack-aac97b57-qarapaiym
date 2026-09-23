@@ -4,4 +4,4 @@ import { validateDataset } from "./validate";
 validateDataset(rawDataset);
 export const cityDataset: CityDataset = rawDataset;
 export { validateDataset };
-export const DATASET_NOTE = "Synthetic Astana demo — invented populations, costs and impact assumptions; not official statistics or forecasts. Budget and costs are in million KZT.";
+export const DATASET_NOTE = "Учебные данные официального кейса «Аким на 5 часов»; не официальная статистика и не прогноз. Бюджет и цены — условные единицы, горизонт — 8 кварталов.";

@@ -1,952 +1,261 @@
 {
-  "budget": 1000,
+  "budget": 100,
+  "horizon": 8,
   "districts": [
     {
-      "id": "almaty",
-      "name": "Almaty",
-      "population": 300000,
+      "id": "esil",
+      "name": "Есиль",
+      "population": 0.27,
       "metrics": {
-        "transport": 51,
-        "greening": 45,
-        "social": 62,
-        "safety": 58,
-        "services": 60
+        "T1": 45.0,
+        "T2": 62.0,
+        "E1": 68.0,
+        "E2": 72.0,
+        "S1": 48.0,
+        "S2": 55.0,
+        "B1": 78.0,
+        "B2": 60.0,
+        "C1": 75.0,
+        "C2": 70.0
+      }
+    },
+    {
+      "id": "almaty",
+      "name": "Алматы",
+      "population": 0.24,
+      "metrics": {
+        "T1": 40.0,
+        "T2": 75.0,
+        "E1": 50.0,
+        "E2": 55.0,
+        "S1": 60.0,
+        "S2": 65.0,
+        "B1": 62.0,
+        "B2": 52.0,
+        "C1": 50.0,
+        "C2": 60.0
       }
     },
     {
       "id": "saryarka",
-      "name": "Saryarka",
-      "population": 260000,
+      "name": "Сарыарка",
+      "population": 0.2,
       "metrics": {
-        "transport": 57,
-        "greening": 39,
-        "social": 50,
-        "safety": 52,
-        "services": 48
-      }
-    },
-    {
-      "id": "esil",
-      "name": "Esil",
-      "population": 220000,
-      "metrics": {
-        "transport": 64,
-        "greening": 62,
-        "social": 69,
-        "safety": 66,
-        "services": 65
+        "T1": 50.0,
+        "T2": 70.0,
+        "E1": 42.0,
+        "E2": 40.0,
+        "S1": 62.0,
+        "S2": 68.0,
+        "B1": 58.0,
+        "B2": 55.0,
+        "C1": 45.0,
+        "C2": 55.0
       }
     },
     {
       "id": "baikonur",
-      "name": "Baikonur",
-      "population": 180000,
+      "name": "Байконур",
+      "population": 0.13,
       "metrics": {
-        "transport": 43,
-        "greening": 48,
-        "social": 46,
-        "safety": 47,
-        "services": 42
+        "T1": 52.0,
+        "T2": 68.0,
+        "E1": 55.0,
+        "E2": 50.0,
+        "S1": 58.0,
+        "S2": 60.0,
+        "B1": 52.0,
+        "B2": 58.0,
+        "C1": 55.0,
+        "C2": 58.0
       }
     },
     {
       "id": "nura",
-      "name": "Nura",
-      "population": 160000,
+      "name": "Нура",
+      "population": 0.16,
       "metrics": {
-        "transport": 46,
-        "greening": 55,
-        "social": 42,
-        "safety": 54,
-        "services": 45
+        "T1": 55.0,
+        "T2": 40.0,
+        "E1": 45.0,
+        "E2": 65.0,
+        "S1": 38.0,
+        "S2": 35.0,
+        "B1": 55.0,
+        "B2": 50.0,
+        "C1": 60.0,
+        "C2": 50.0
       }
     }
   ],
   "initiatives": [
     {
-      "id": "transport-bus",
+      "id": "M1",
       "category": "transport",
-      "name": "Bus priority corridors",
-      "description": "Faster bus trips citywide; construction temporarily reduces green space.",
-      "cost": 180,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "transport",
-          "delta": 10
-        },
-        {
-          "districtId": "almaty",
-          "metric": "greening",
-          "delta": -2
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "transport",
-          "delta": 10
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "greening",
-          "delta": -2
-        },
-        {
-          "districtId": "esil",
-          "metric": "transport",
-          "delta": 10
-        },
-        {
-          "districtId": "esil",
-          "metric": "greening",
-          "delta": -2
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "transport",
-          "delta": 12
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "greening",
-          "delta": -2
-        },
-        {
-          "districtId": "nura",
-          "metric": "transport",
-          "delta": 12
-        },
-        {
-          "districtId": "nura",
-          "metric": "greening",
-          "delta": -2
-        }
-      ]
+      "name": "Выделенные полосы для автобусов",
+      "scope": "district",
+      "cost": 18,
+      "lag": 2,
+      "effects": {
+        "T1": 6.0,
+        "T2": 9.0
+      }
     },
     {
-      "id": "transport-junctions",
+      "id": "M2",
       "category": "transport",
-      "name": "Safer neighborhood junctions",
-      "description": "Targeted crossing and junction upgrades; smaller travel-time gains.",
-      "cost": 100,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "transport",
-          "delta": 5
-        },
-        {
-          "districtId": "almaty",
-          "metric": "safety",
-          "delta": 3
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "transport",
-          "delta": 5
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "safety",
-          "delta": 3
-        },
-        {
-          "districtId": "esil",
-          "metric": "transport",
-          "delta": 5
-        },
-        {
-          "districtId": "esil",
-          "metric": "safety",
-          "delta": 3
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "transport",
-          "delta": 7
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "safety",
-          "delta": 3
-        },
-        {
-          "districtId": "nura",
-          "metric": "transport",
-          "delta": 7
-        },
-        {
-          "districtId": "nura",
-          "metric": "safety",
-          "delta": 3
-        }
-      ]
+      "name": "Умные светофоры (адаптивное управление)",
+      "scope": "city",
+      "cost": 22,
+      "lag": 2,
+      "effects": {
+        "T1": 4.0,
+        "B2": 3.0
+      }
     },
     {
-      "id": "transport-rail",
+      "id": "M3",
       "category": "transport",
-      "name": "Rapid transit expansion",
-      "description": "Large access improvement; construction disrupts nearby services.",
-      "cost": 360,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "transport",
-          "delta": 17
-        },
-        {
-          "districtId": "almaty",
-          "metric": "services",
-          "delta": -3
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "transport",
-          "delta": 17
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "services",
-          "delta": -3
-        },
-        {
-          "districtId": "esil",
-          "metric": "transport",
-          "delta": 17
-        },
-        {
-          "districtId": "esil",
-          "metric": "services",
-          "delta": -3
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "transport",
-          "delta": 19
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "services",
-          "delta": -3
-        },
-        {
-          "districtId": "nura",
-          "metric": "transport",
-          "delta": 19
-        },
-        {
-          "districtId": "nura",
-          "metric": "services",
-          "delta": -3
-        }
-      ]
+      "name": "Линия ЛРТ / расширение",
+      "scope": "district",
+      "cost": 30,
+      "lag": 4,
+      "effects": {
+        "T1": 16.0,
+        "T2": 20.0,
+        "E2": 4.0
+      }
     },
     {
-      "id": "greening-trees",
+      "id": "M4",
       "category": "greening",
-      "name": "Shade and street trees",
-      "description": "Distributed shade planting; maintenance adds pressure to city services.",
-      "cost": 120,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "greening",
-          "delta": 12
-        },
-        {
-          "districtId": "almaty",
-          "metric": "services",
-          "delta": -1
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "greening",
-          "delta": 12
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "services",
-          "delta": -1
-        },
-        {
-          "districtId": "esil",
-          "metric": "greening",
-          "delta": 10
-        },
-        {
-          "districtId": "esil",
-          "metric": "services",
-          "delta": -1
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "greening",
-          "delta": 12
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "services",
-          "delta": -1
-        },
-        {
-          "districtId": "nura",
-          "metric": "greening",
-          "delta": 10
-        },
-        {
-          "districtId": "nura",
-          "metric": "services",
-          "delta": -1
-        }
-      ]
+      "name": "Парк / сквер",
+      "scope": "district",
+      "cost": 15,
+      "lag": 2,
+      "effects": {
+        "E1": 12.0,
+        "E2": 3.0,
+        "B1": 2.0
+      }
     },
     {
-      "id": "greening-parks",
+      "id": "M5",
       "category": "greening",
-      "name": "Connected park network",
-      "description": "Larger green corridors and recreation access; land works slow transport.",
-      "cost": 240,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "greening",
-          "delta": 19
-        },
-        {
-          "districtId": "almaty",
-          "metric": "transport",
-          "delta": -2
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "greening",
-          "delta": 19
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "transport",
-          "delta": -2
-        },
-        {
-          "districtId": "esil",
-          "metric": "greening",
-          "delta": 17
-        },
-        {
-          "districtId": "esil",
-          "metric": "transport",
-          "delta": -2
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "greening",
-          "delta": 19
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "transport",
-          "delta": -2
-        },
-        {
-          "districtId": "nura",
-          "metric": "greening",
-          "delta": 17
-        },
-        {
-          "districtId": "nura",
-          "metric": "transport",
-          "delta": -2
-        }
-      ]
+      "name": "Перевод частного сектора на чистое топливо",
+      "scope": "district",
+      "cost": 25,
+      "lag": 3,
+      "effects": {
+        "E2": 14.0,
+        "C1": 4.0
+      }
     },
     {
-      "id": "greening-pockets",
+      "id": "M6",
       "category": "greening",
-      "name": "Pocket gardens",
-      "description": "Small gardens near homes with modest citywide coverage.",
-      "cost": 70,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "greening",
-          "delta": 7
-        },
-        {
-          "districtId": "almaty",
-          "metric": "social",
-          "delta": 1
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "greening",
-          "delta": 7
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "social",
-          "delta": 1
-        },
-        {
-          "districtId": "esil",
-          "metric": "greening",
-          "delta": 5
-        },
-        {
-          "districtId": "esil",
-          "metric": "social",
-          "delta": 1
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "greening",
-          "delta": 7
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "social",
-          "delta": 1
-        },
-        {
-          "districtId": "nura",
-          "metric": "greening",
-          "delta": 5
-        },
-        {
-          "districtId": "nura",
-          "metric": "social",
-          "delta": 1
-        }
-      ]
+      "name": "Городская программа озеленения и ветрозащитных полос",
+      "scope": "city",
+      "cost": 20,
+      "lag": 4,
+      "effects": {
+        "E1": 5.0,
+        "E2": 3.0
+      }
     },
     {
-      "id": "social-clinics",
+      "id": "M7",
       "category": "social",
-      "name": "Neighborhood clinics",
-      "description": "Improves care access and community resilience.",
-      "cost": 210,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "social",
-          "delta": 12
-        },
-        {
-          "districtId": "almaty",
-          "metric": "safety",
-          "delta": 2
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "social",
-          "delta": 12
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "safety",
-          "delta": 2
-        },
-        {
-          "districtId": "esil",
-          "metric": "social",
-          "delta": 12
-        },
-        {
-          "districtId": "esil",
-          "metric": "safety",
-          "delta": 2
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "social",
-          "delta": 14
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "safety",
-          "delta": 2
-        },
-        {
-          "districtId": "nura",
-          "metric": "social",
-          "delta": 14
-        },
-        {
-          "districtId": "nura",
-          "metric": "safety",
-          "delta": 2
-        }
-      ]
+      "name": "Школа + детсад (модульное строительство)",
+      "scope": "district",
+      "cost": 24,
+      "lag": 3,
+      "effects": {
+        "S1": 16.0
+      }
     },
     {
-      "id": "social-schools",
+      "id": "M8",
       "category": "social",
-      "name": "Schools and community hubs",
-      "description": "Broader social access, with extra traffic near new facilities.",
-      "cost": 300,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "social",
-          "delta": 18
-        },
-        {
-          "districtId": "almaty",
-          "metric": "transport",
-          "delta": -3
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "social",
-          "delta": 18
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "transport",
-          "delta": -3
-        },
-        {
-          "districtId": "esil",
-          "metric": "social",
-          "delta": 18
-        },
-        {
-          "districtId": "esil",
-          "metric": "transport",
-          "delta": -3
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "social",
-          "delta": 20
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "transport",
-          "delta": -3
-        },
-        {
-          "districtId": "nura",
-          "metric": "social",
-          "delta": 20
-        },
-        {
-          "districtId": "nura",
-          "metric": "transport",
-          "delta": -3
-        }
-      ]
+      "name": "Центр семейного здоровья / поликлиника",
+      "scope": "district",
+      "cost": 20,
+      "lag": 3,
+      "effects": {
+        "S2": 14.0
+      }
     },
     {
-      "id": "social-outreach",
+      "id": "M9",
       "category": "social",
-      "name": "Mobile care and outreach",
-      "description": "Affordable targeted services; limited long-term capacity.",
-      "cost": 100,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "social",
-          "delta": 6
-        },
-        {
-          "districtId": "almaty",
-          "metric": "services",
-          "delta": 1
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "social",
-          "delta": 6
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "services",
-          "delta": 1
-        },
-        {
-          "districtId": "esil",
-          "metric": "social",
-          "delta": 6
-        },
-        {
-          "districtId": "esil",
-          "metric": "services",
-          "delta": 1
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "social",
-          "delta": 8
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "services",
-          "delta": 1
-        },
-        {
-          "districtId": "nura",
-          "metric": "social",
-          "delta": 8
-        },
-        {
-          "districtId": "nura",
-          "metric": "services",
-          "delta": 1
-        }
-      ]
+      "name": "Дворовые спорт-хабы",
+      "scope": "district",
+      "cost": 10,
+      "lag": 1,
+      "effects": {
+        "S1": 3.0,
+        "S2": 3.0,
+        "B1": 3.0
+      }
     },
     {
-      "id": "safety-lighting",
+      "id": "M10",
       "category": "safety",
-      "name": "Safe routes and lighting",
-      "description": "Brighter walking routes and safer public spaces.",
-      "cost": 110,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "safety",
-          "delta": 9
-        },
-        {
-          "districtId": "almaty",
-          "metric": "transport",
-          "delta": 2
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "safety",
-          "delta": 9
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "transport",
-          "delta": 2
-        },
-        {
-          "districtId": "esil",
-          "metric": "safety",
-          "delta": 9
-        },
-        {
-          "districtId": "esil",
-          "metric": "transport",
-          "delta": 2
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "safety",
-          "delta": 11
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "transport",
-          "delta": 2
-        },
-        {
-          "districtId": "nura",
-          "metric": "safety",
-          "delta": 9
-        },
-        {
-          "districtId": "nura",
-          "metric": "transport",
-          "delta": 2
-        }
-      ]
+      "name": "Освещение и камеры (расширение Safe City)",
+      "scope": "district",
+      "cost": 12,
+      "lag": 1,
+      "effects": {
+        "B1": 12.0,
+        "B2": 2.0
+      }
     },
     {
-      "id": "safety-response",
+      "id": "M11",
       "category": "safety",
-      "name": "Emergency response stations",
-      "description": "Faster emergency response, with a larger service workload.",
-      "cost": 230,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "safety",
-          "delta": 17
-        },
-        {
-          "districtId": "almaty",
-          "metric": "services",
-          "delta": -2
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "safety",
-          "delta": 17
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "services",
-          "delta": -2
-        },
-        {
-          "districtId": "esil",
-          "metric": "safety",
-          "delta": 17
-        },
-        {
-          "districtId": "esil",
-          "metric": "services",
-          "delta": -2
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "safety",
-          "delta": 19
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "services",
-          "delta": -2
-        },
-        {
-          "districtId": "nura",
-          "metric": "safety",
-          "delta": 17
-        },
-        {
-          "districtId": "nura",
-          "metric": "services",
-          "delta": -2
-        }
-      ]
+      "name": "Безопасные переходы и школьные зоны",
+      "scope": "district",
+      "cost": 10,
+      "lag": 1,
+      "effects": {
+        "B2": 12.0,
+        "T1": -2.0
+      }
     },
     {
-      "id": "safety-community",
-      "category": "safety",
-      "name": "Community safety teams",
-      "description": "Local prevention and outreach with modest safety gains.",
-      "cost": 60,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "safety",
-          "delta": 5
-        },
-        {
-          "districtId": "almaty",
-          "metric": "social",
-          "delta": 2
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "safety",
-          "delta": 5
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "social",
-          "delta": 2
-        },
-        {
-          "districtId": "esil",
-          "metric": "safety",
-          "delta": 5
-        },
-        {
-          "districtId": "esil",
-          "metric": "social",
-          "delta": 2
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "safety",
-          "delta": 7
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "social",
-          "delta": 2
-        },
-        {
-          "districtId": "nura",
-          "metric": "safety",
-          "delta": 5
-        },
-        {
-          "districtId": "nura",
-          "metric": "social",
-          "delta": 2
-        }
-      ]
-    },
-    {
-      "id": "services-water",
+      "id": "M12",
       "category": "services",
-      "name": "Water and utility renewal",
-      "description": "Reliable utilities; road works temporarily slow transport.",
-      "cost": 200,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "services",
-          "delta": 13
-        },
-        {
-          "districtId": "almaty",
-          "metric": "transport",
-          "delta": -2
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "services",
-          "delta": 15
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "transport",
-          "delta": -2
-        },
-        {
-          "districtId": "esil",
-          "metric": "services",
-          "delta": 13
-        },
-        {
-          "districtId": "esil",
-          "metric": "transport",
-          "delta": -2
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "services",
-          "delta": 15
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "transport",
-          "delta": -2
-        },
-        {
-          "districtId": "nura",
-          "metric": "services",
-          "delta": 15
-        },
-        {
-          "districtId": "nura",
-          "metric": "transport",
-          "delta": -2
-        }
-      ]
+      "name": "Единая цифровая платформа обращений",
+      "scope": "city",
+      "cost": 14,
+      "lag": 1,
+      "effects": {
+        "C2": 5.0
+      }
     },
     {
-      "id": "services-digital",
+      "id": "M13",
       "category": "services",
-      "name": "Digital service desk",
-      "description": "Faster routine requests; residents without digital access need assistance.",
-      "cost": 80,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "services",
-          "delta": 5
-        },
-        {
-          "districtId": "almaty",
-          "metric": "social",
-          "delta": -1
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "services",
-          "delta": 7
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "social",
-          "delta": -1
-        },
-        {
-          "districtId": "esil",
-          "metric": "services",
-          "delta": 5
-        },
-        {
-          "districtId": "esil",
-          "metric": "social",
-          "delta": -1
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "services",
-          "delta": 7
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "social",
-          "delta": -1
-        },
-        {
-          "districtId": "nura",
-          "metric": "services",
-          "delta": 7
-        },
-        {
-          "districtId": "nura",
-          "metric": "social",
-          "delta": -1
-        }
-      ]
+      "name": "Модернизация тепло- и водосетей",
+      "scope": "district",
+      "cost": 28,
+      "lag": 4,
+      "effects": {
+        "C1": 18.0,
+        "E2": 2.0
+      }
     },
     {
-      "id": "services-waste",
+      "id": "M14",
       "category": "services",
-      "name": "Clean streets and recycling",
-      "description": "More reliable collection improves cleanliness and green space.",
-      "cost": 150,
-      "impacts": [
-        {
-          "districtId": "almaty",
-          "metric": "services",
-          "delta": 9
-        },
-        {
-          "districtId": "almaty",
-          "metric": "greening",
-          "delta": 4
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "services",
-          "delta": 11
-        },
-        {
-          "districtId": "saryarka",
-          "metric": "greening",
-          "delta": 4
-        },
-        {
-          "districtId": "esil",
-          "metric": "services",
-          "delta": 9
-        },
-        {
-          "districtId": "esil",
-          "metric": "greening",
-          "delta": 4
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "services",
-          "delta": 11
-        },
-        {
-          "districtId": "baikonur",
-          "metric": "greening",
-          "delta": 4
-        },
-        {
-          "districtId": "nura",
-          "metric": "services",
-          "delta": 11
-        },
-        {
-          "districtId": "nura",
-          "metric": "greening",
-          "delta": 4
-        }
-      ]
+      "name": "Аварийные бригады ЖКХ + раннее оповещение",
+      "scope": "city",
+      "cost": 16,
+      "lag": 1,
+      "effects": {
+        "C1": 5.0,
+        "C2": 2.0
+      }
     }
   ]
 }
