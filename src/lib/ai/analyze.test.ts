@@ -37,6 +37,14 @@ describe('AI boundary', () => {
     const response = await POST(request(result)); expect(response.status).toBe(503);
     expect((await response.json()).code).toBe('AI_NOT_CONFIGURED'); expect(JSON.stringify(result)).toBe(before);
   });
+  it('reports rejected credentials without exposing provider details', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('secret-provider-details', {status: 401})));
+    const response = await POST(request(result));
+    expect(response.status).toBe(503);
+    const body = await response.json();
+    expect(body.code).toBe('AI_CREDENTIALS_INVALID');
+    expect(JSON.stringify(body)).not.toContain('secret-provider-details');
+  });
   it('handles failed, refused, incomplete, oversized and malformed provider outputs', async () => {
     for (const response of [new Response('secret-provider-details',{status:429}),provider({}),Response.json({status:'incomplete',output:[]}),Response.json({status:'completed',output:[{type:'message',content:[{type:'refusal'}]}]}),new Response('not JSON'),new Response('x'.repeat(100_001))]) {
       vi.stubGlobal('fetch',vi.fn().mockResolvedValue(response)); const output = await POST(request(result));

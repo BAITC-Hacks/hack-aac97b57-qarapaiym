@@ -5,7 +5,7 @@ A HackAlem city-management simulator: start with a fixed virtual budget and synt
 ## Run locally
 
 Install Node.js 24 LTS (or Node.js 22.12+) and npm. From a fresh clone:
-
+    
 ```sh
 npm ci
 cp .env.example .env.local
