@@ -5,6 +5,7 @@ import { ArrowRight, Check, ChevronDown, LoaderCircle, RotateCcw } from "lucide-
 import { cityDataset } from "@/lib/data";
 import { calculateSnapshot, simulateScenario } from "@/lib/simulation";
 import { initiativeCopy } from "@/components/initiative-copy";
+import { ScenarioReview } from "@/components/scenario-review";
 import { CATEGORIES, type Category, type Initiative, type ScenarioSelection, type SimulationResult, type AIAnalysis } from "@/types/city";
 
 const labels: Record<Category, string> = { transport: "Транспорт", greening: "Озеленение", social: "Социальная инфраструктура", safety: "Безопасность", services: "Городские сервисы" };
@@ -150,34 +151,9 @@ export default function Home() {
       </section>
 
       {result && <section className="results-section" ref={resultsRef} tabIndex={-1} aria-labelledby="results-heading">
-        <div className="section-heading"><div><p className="eyebrow">03 / ПОСЛЕДСТВИЯ</p><h2 id="results-heading">Результат сценария</h2></div><button className="secondary-button" onClick={() => setSaved(result)}>{saved ? "Обновить сохранённый A" : "Сохранить как сценарий A"}</button></div>
-        <div className="score-result" aria-label="Изменение Astana Quality of Life Score">
-          <div><span>До решений</span><strong>{score(result.baseline.overall)}</strong></div><ArrowRight className="score-arrow" aria-hidden="true" />
-          <div className="projected-score"><span>После решений</span><strong>{score(result.projected.overall)}</strong></div>
-          <div className="score-change"><span>Изменение AQoL</span><strong className={result.delta < 0 ? "negative" : "positive"}>{signed(result.delta)}<small> п.</small></strong></div>
-        </div>
-        <p className="result-caption">Шкала 0–100. Расчёт модели по вашим решениям. Выделено {money(result.budget.spent)}, осталось {money(result.budget.remaining)}.</p>
-        <div className="metrics-results"><div className="metrics-heading"><h3>Что изменилось по направлениям</h3><span><i />До <i />После</span></div>
-          {CATEGORIES.map(category => {
-            const before = result.baseline.byCategory[category], after = result.projected.byCategory[category];
-            return <div className="metric-row" key={category}><span>{labels[category]}</span><div className="comparison-bars" aria-hidden="true"><i style={{ width: `${before}%` }} /><i style={{ width: `${after}%` }} /></div><span className="metric-values">{score(before)} → <strong>{score(after)}</strong></span><strong className={after < before ? "negative" : "positive"}>{signed(after - before)}</strong></div>;
-          })}
-        </div>
-        <section className="consequences" aria-labelledby="consequences-heading"><h3 id="consequences-heading">Какие решения повлияли на результат</h3><p>Эффекты из исходных данных модели. Они складываются по районам; побочные потери могут частично перекрывать улучшения.</p>
-          <div className="consequence-list">{result.selectedInitiatives.map(item => <div className="consequence-row" key={item.id}><div><span className="eyebrow">{labels[item.category]} · {money(item.cost)}</span><h4>{initiativeCopy(item).name}</h4><p>{initiativeCopy(item).description}</p></div><Effects initiative={item} /></div>)}</div>
-        </section>
-        <details className="district-details"><summary>По районам: до → после <ChevronDown size={16} /></summary><DistrictTable snapshot={result.projected} before={result.baseline} /></details>
-        {saved && <section className="comparison" aria-labelledby="comparison-heading"><div className="section-heading"><h3 id="comparison-heading">Сравнение сценариев</h3><button className="text-button" onClick={() => setSaved(null)}>Убрать сохранённый A</button></div>
-          <div className="table-scroll" role="region" aria-label="Таблица сравнения сценариев" tabIndex={0}><table><thead><tr><th scope="col">Показатель</th><th scope="col">Сохранённый A</th><th scope="col">Текущий B</th><th scope="col">B − A</th></tr></thead><tbody>{[{ label: "AQoL", a: saved.projected.overall, b: result.projected.overall }, ...CATEGORIES.map(category => ({ label: labels[category], a: saved.projected.byCategory[category], b: result.projected.byCategory[category] })), { label: "Выделено, млн ₸", a: saved.budget.spent, b: result.budget.spent }].map(row => <tr key={row.label}><th scope="row">{row.label}</th><td>{number(row.a)}</td><td>{number(row.b)}</td><td>{signed(row.b - row.a)}</td></tr>)}</tbody></table></div>
-          <p className="muted">Сценарий A сохранён до перезагрузки страницы. Измените решения и повторите расчёт для сравнения.</p>
-        </section>}
-        <section className="analysis-section" aria-labelledby="analysis-heading"><h3 id="analysis-heading">Объяснение и рекомендации</h3><p className="muted">Комментарий AI к рассчитанному сценарию. Числа в таблицах остаются основным результатом.</p>
-          <div aria-live="polite" aria-busy={loading}>
-            {loading && <div className="loading-state"><LoaderCircle size={22} className="spin" /><div><strong>Готовим объяснение решений…</strong><p>Рейтинг уже рассчитан. Ожидаем оценку сильных сторон, рисков и компромиссов.</p></div></div>}
-            {aiError && <div className="error-state" role="alert"><strong>Объяснение пока недоступно. Расчёт сохранён.</strong><p>{aiError.includes("OPENAI_API_KEY") ? "Для команды: подключите ключ сервиса на сервере и перезапустите приложение. Затем повторите запрос." : "Не удалось получить ответ сервиса. Повторите запрос; пересчитывать сценарий не нужно."}</p><button className="secondary-button" onClick={() => void explain(result)}><RotateCcw size={15} />Повторить объяснение</button><details className="technical-detail"><summary>Подробности ошибки</summary><p>{aiError}</p></details></div>}
-            {analysis && <><p className="analysis-summary">{analysis.summary}</p><div className="analysis-columns">{[{ title: "Сильные стороны", items: analysis.strengths }, { title: "Риски", items: analysis.risks }, { title: "Компромиссы", items: analysis.tradeoffs }].map(group => <div key={group.title}><h4>{group.title}</h4><ul>{group.items.map((text, index) => <li key={index}>{text}</li>)}</ul></div>)}</div><div className="recommendations"><h4>Что пересмотреть</h4>{analysis.recommendations.map((item, index) => <div key={index}><strong>{item.title}</strong><p>{item.rationale}</p></div>)}</div></>}
-          </div>
-        </section>
+        <ScenarioReview result={result} districts={cityDataset.districts} saved={saved}
+          analysis={analysis} loading={loading} aiError={aiError}
+          onSave={() => setSaved(result)} onClearSaved={() => setSaved(null)} onRetry={() => void explain(result)} />
       </section>}
       <footer>Учебный симулятор. Население, исходные показатели, стоимость и эффекты мероприятий синтетические. Это не прогноз и не официальная статистика Астаны.</footer>
     </main>
