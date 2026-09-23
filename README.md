@@ -1,20 +1,24 @@
 # Аким на 5 часов
 
-A HackAlem city-management simulator: start with a fixed virtual budget and synthetic Astana district metrics, make five decisions, and compare deterministic quality-of-life results. AI explains the result; code calculates the score.
+Учебный симулятор городских решений для Астаны. Каждый участник начинает с одинаковых синтетических показателей районов и фиксированного виртуального бюджета. Нужно выбрать по одному проекту в пяти сферах, получить рассчитанный показатель качества жизни (AQoL) и объяснение от AI. **Балл рассчитывает код; AI его не меняет.**
 
-## Run locally
+## Задача и сценарий
 
-Install Node.js 24 LTS (or Node.js 22.12+) and npm. From a fresh clone:
-    
+Пять сфер: транспорт, озеленение, социальная инфраструктура, безопасность и городские услуги. Приложение показывает расходы и остаток бюджета, блокирует перерасход, сравнивает показатели до и после решений и позволяет сопоставить два сценария в рамках открытой страницы. Обязательные требования приведены в [CASE.md](CASE.md) и [ACCEPTANCE_TESTS.md](ACCEPTANCE_TESTS.md). Для выступления подготовлен [сценарий на 60–90 секунд](docs/JUDGE_DEMO_RU.md).
+
+## Установка и запуск
+
+Нужны Node.js 24 LTS или Node.js не ниже 22.12 и npm. Из корня свежего клона:
+
 ```sh
 npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-PowerShell also supports `Copy-Item .env.example .env.local`. Open http://localhost:3000. Set `OPENAI_API_KEY` in `.env.local` to enable real analysis. `OPENAI_MODEL` defaults to `gpt-4.1` and must support Structured Outputs on the Responses API. Restart the server after editing environment settings. The API key is server-only; never prefix it with `NEXT_PUBLIC_`. Without a key the simulator works, and AI analysis reports a configuration error.
+В PowerShell вместо `cp` используйте `Copy-Item .env.example .env.local`. Откройте [http://localhost:3000](http://localhost:3000). Для симуляции ключ API не нужен: без него рассчитанные результаты видны, а AI-анализ сообщает об отсутствии настройки.
 
-Stop the development server with Ctrl+C before the production checks below (or use a separate port).
+Перед проверкой и production-запуском остановите сервер разработки сочетанием Ctrl+C (либо используйте другой порт):
 
 ```sh
 npm test
@@ -23,50 +27,66 @@ npm run build
 npm start
 ```
 
-`npm start` serves the production build. No database, seed command or external data service is needed. AI requires server access to `api.openai.com` and a funded API account.
+Если Turbopack в ограниченной среде не может запустить локальный процесс при сборке, проверенная для этого случая команда — `npm run build -- --webpack`. Подробности текущей проверки указаны в [docs/VERIFICATION.md](docs/VERIFICATION.md). База данных, миграции и загрузка внешних данных не нужны.
 
-## Architecture and assumptions
+## Настройка AI-провайдера
 
-- `src/types/city.ts`: shared types and categories.
-- `data/` and `src/lib/data/`: fixed local synthetic dataset.
-- `src/lib/simulation/`: pure validation, budget, impacts and score arithmetic.
-- `src/app/page.tsx` and `src/components/`: decision and comparison interface.
-- `src/app/api/analyze/route.ts`: server-side canonical scenario validation.
-- `src/lib/ai/`: Responses request, structured-output checks and controlled errors.
+Для реального объяснения задайте `OPENAI_API_KEY` в `.env.local`. Не добавляйте ключ в Git и не используйте префикс `NEXT_PUBLIC_`: запрос к провайдеру выполняется на сервере. `OPENAI_MODEL` по умолчанию равен `gpt-4.1`; при замене нужна модель с поддержкой Structured Outputs в Responses API. После изменения настроек окружения перезапустите сервер. Также требуются доступ сервера к `api.openai.com` и рабочий API-аккаунт.
 
-No official dataset was supplied. Baselines, populations, costs and effects are invented demonstration values, not official Astana statistics or procurement estimates. The budget is 1,000 million virtual KZT. District names provide context only. The index is an illustrative teaching model, not a real-world prediction.
+```dotenv
+OPENAI_API_KEY=ваш_ключ
+OPENAI_MODEL=gpt-4.1
+```
 
-## Deterministic score
+Сервер использует [OpenAI Responses API](https://developers.openai.com/api/docs/guides/structured-outputs), строгую JSON-схему и `store: false`. При отсутствии ключа, ошибке провайдера или некорректном ответе рассчитанный балл остаётся на экране; выдуманный AI-ответ не подставляется.
 
-Exactly one initiative is required for each category: transport, greening, social, safety and services. Unknown IDs, category mismatch, missing choices and overspend are invalid. Costs are summed against the fixed budget. Effects are added to district metrics and clamped to 0–100.
+Сервер проверяет отдельный блок evidence: бюджет, AQoL, выбранные инициативы, сферы с наибольшим/наименьшим итоговым показателем и наибольшим приростом должны совпадать с рассчитанными фактами. Это проверка структурированных фактов, а не достоверности каждого предложения свободного текста. Запрос ограничен 25 секундами; размеры входного и выходного ответа ограничены. AI получает инструкцию объяснять результат по-русски и обсуждать только выбранные инициативы и их заданные эффекты.
 
-Category scores are population-weighted district averages when every population is present and their sum is positive; otherwise districts have equal weight. AQoL is the equal average of five unrounded category scores, then rounded to one decimal. Displayed category scores are also rounded to one decimal. The baseline and projection share the same formula. The engine owns all calculations before an AI call.
+## Формула и проверка решений
 
-## AI endpoint
+- Виртуальный бюджет — **1 000 млн ₸**. Стоимости выражены в миллионах тенге; при проверке бюджета они переводятся в целые тенге.
+- Каждая инициатива меняет показатели районов. Эффекты сначала суммируются, затем показатели ограничиваются интервалом 0–100.
+- Балл сферы — среднее показателя по районам с весами по населению, если население указано для всех районов и его сумма положительна. Иначе районы имеют равный вес.
+- **AQoL — среднее пяти неокруглённых баллов сфер**, округлённое до одного знака. Отображаемые баллы сфер также округляются до одного знака, но для общего балла используются исходные значения.
+- Неполный план, неизвестная инициатива, неверная сфера и перерасход делают сценарий недействительным; эффекты такого плана не применяются.
 
-`POST /api/analyze` accepts the exact `SimulationResult` from the architecture contract and returns summary, strengths, risks, tradeoffs and categorized recommendations. The server derives selections from initiative IDs, recomputes the result using its local dataset, and rejects tampered or outdated metrics before contacting the model.
+Одинаковые данные и решения всегда дают одинаковый результат. При смене инициативы меняются эффекты и, если они различаются, итоговые показатели. Формат данных и результата описан в [архитектурном контракте](docs/ARCHITECTURE_CONTRACT.md).
 
-The integration uses the [OpenAI Responses Structured Outputs format](https://developers.openai.com/api/docs/guides/structured-outputs), with `text.format`, `json_schema`, and `strict: true`. The request sets `store: false`. Runtime checks reject empty fields, extra fields, invalid categories, refusals, incomplete responses and malformed JSON. A server-only evidence block must match the canonical budget, AQoL, selected IDs, highest/lowest category and largest gain. These checks validate the evidence block, not every claim in free-form prose. The prompt requests Russian explanations grounded in the supplied effects and restricts recommendations to reviewing selected initiatives. Requests abort after 25 seconds; input and output bodies are bounded. No fabricated fallback is presented on failure; deterministic results remain available.
+## Данные и ограничения
 
-## Judge demo
+[data/city-demo.json](data/city-demo.json) — **синтетический демонстрационный набор**. Названия районов дают контекст, но население, исходные показатели, стоимости и эффекты придуманы для прототипа. Это не официальная статистика Астаны, не оценка закупок и не прогноз последствий городских решений. Допущения указаны в [data/README.md](data/README.md).
 
-1. Open the app; note the starting budget and baseline.
-2. Attempt submission with a missing category: it must be blocked.
-3. Select Scenario A using the visible names in the table below (820 million virtual KZT). Press “Рассчитать сценарий”: AQoL is 64.6, up 11.4 from baseline 53.2. Press “Сохранить как сценарий A”.
-4. AI analysis starts automatically when the scenario is calculated. With a configured key, inspect its strengths, risks, trade-offs and recommendations. Without a key, verify the clear error while the calculated score remains visible; “Повторить объяснение” retries analysis.
-5. Select Scenario B using the table (650 million). Press “Рассчитать сценарий” again: AQoL is 64.0, up 10.8. The comparison shows lower spending and stronger greening alongside lower scores in other categories. Saved comparisons last only for the current page session.
-6. Try an expensive combination: overspend must be blocked. Reload to verify the same initial conditions.
+Модель складывает эффекты за один условный период. Она не учитывает сроки реализации, эксплуатационные расходы, инфляцию, взаимодействие проектов и причинную неопределённость. AI-текст может ошибаться даже при корректной JSON-структуре и проверенном блоке evidence. Рассчитанные кодом таблицы остаются основным результатом. Перед публичным размещением платного API-маршрута понадобятся ограничения частоты запросов и защита от злоупотреблений.
 
-| Direction | Scenario A: visible name (ID) | Scenario B: visible name (ID) |
+## Архитектура
+
+| Часть | Назначение |
+| --- | --- |
+| `data/city-demo.json`, `src/lib/data/` | Фиксированные данные и проверка их структуры |
+| `src/types/city.ts` | Общие типы сфер, инициатив и результатов |
+| `src/lib/simulation/` | Проверка выбора и бюджета, применение эффектов, расчёт AQoL |
+| `src/app/page.tsx`, `src/app/globals.css`, `src/components/initiative-copy.ts` | Интерфейс выбора, результатов и сравнения; текст инициатив |
+| `src/app/api/analyze/route.ts` | Серверная повторная проверка сценария перед AI-вызовом |
+| `src/lib/ai/` | Запрос к Responses API, проверка ответа и управляемые ошибки |
+
+Клиент сначала рассчитывает результат детерминированной функцией. Затем отправляет его на `/api/analyze`; сервер повторно вычисляет результат по своему набору данных и отклоняет изменённые или устаревшие числа. AI получает готовые показатели и формирует резюме, сильные стороны, риски, компромиссы и рекомендации. Сравнение A/B хранится только в состоянии текущей страницы и исчезает после перезагрузки.
+
+## Точный демонстрационный прогон
+
+1. Откройте приложение: бюджет **1 000 млн ₸**, исходный AQoL **53,2**. Без пяти решений запуск недоступен.
+2. План **A**: `transport-bus`, `greening-trees`, `social-clinics`, `safety-lighting`, `services-water`. Расход **820 млн ₸**, остаток **180 млн ₸**. Запустите симуляцию: AQoL **64,6**, изменение **+11,4**. Сохраните результат как сценарий A.
+3. AI-объяснение запускается автоматически кнопкой «Рассчитать сценарий». С настроенным ключом дождитесь ответа. Без ключа проверьте сообщение об ошибке при сохранённом числовом результате; кнопка «Повторить объяснение» повторяет запрос. Для сравнения используйте «Сохранить как сценарий A».
+4. План **B**: `transport-junctions`, `greening-parks`, `social-outreach`, `safety-community`, `services-waste`. Расход **650 млн ₸**, остаток **350 млн ₸**. После запуска AQoL **64,0**, изменение **+10,8**. Сравните с сохранённым A.
+5. Для проверки перерасхода попробуйте собрать `transport-rail`, `greening-parks`, `social-schools`, `safety-response`, `services-water`: полная стоимость **1 330 млн ₸**. Интерфейс должен заблокировать выбор, который превысит бюджет; движок также отвергает такой план. Перезагрузка возвращает исходные условия.
+
+В интерфейсе инициативы отображаются следующими названиями:
+
+| Направление | Сценарий A | Сценарий B |
 |---|---|---|
-| Транспорт | Выделенные полосы для автобусов (`transport-bus`) | Безопасные перекрёстки (`transport-junctions`) |
-| Озеленение | Деревья вдоль улиц (`greening-trees`) | Связная сеть парков (`greening-parks`) |
-| Социальная инфраструктура | Районные поликлиники (`social-clinics`) | Мобильная помощь жителям (`social-outreach`) |
-| Безопасность | Освещение и безопасные маршруты (`safety-lighting`) | Районные команды безопасности (`safety-community`) |
-| Городские сервисы | Обновление водопровода и сетей (`services-water`) | Уборка улиц и переработка (`services-waste`) |
+| Транспорт | Выделенные полосы для автобусов | Безопасные перекрёстки |
+| Озеленение | Деревья вдоль улиц | Связная сеть парков |
+| Социальная инфраструктура | Районные поликлиники | Мобильная помощь жителям |
+| Безопасность | Освещение и безопасные маршруты | Районные команды безопасности |
+| Городские сервисы | Обновление водопровода и сетей | Уборка улиц и переработка |
 
-Automated tests cover engine behavior and the API integration boundary using mocked provider responses: structured success, tampered inputs, missing key, bad output and timeout. Live AI success additionally requires a real API key; mock success does not prove provider availability. See `ACCEPTANCE_TESTS.md` for the full checklist.
-
-## Limitations
-
-The model uses additive effects over a single turn. It does not simulate implementation timing, operating costs, interactions, inflation or causal uncertainty. AI prose can still be mistaken despite schema validation; deterministic result tables remain authoritative. A public deployment would additionally need rate limiting and abuse controls to protect provider spend.
+Тесты проверяют движок и AI-маршрут, включая подменённые данные, отсутствие ключа, неверный ответ и тайм-аут. Успех теста с подставным ответом провайдера **не подтверждает** успешный реальный вызов OpenAI. Статус всех критериев — в [docs/VERIFICATION.md](docs/VERIFICATION.md).
