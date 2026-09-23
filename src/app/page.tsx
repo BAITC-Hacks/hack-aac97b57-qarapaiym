@@ -1,22 +1,36 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Building2, Bus, Check, ChevronRight, CircleHelp, GitCompareArrows, Landmark, Leaf, LoaderCircle, MapPin, RotateCcw, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
-import { cityDataset, DATASET_NOTE } from "@/lib/data";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight, Check, ChevronDown, LoaderCircle, RotateCcw } from "lucide-react";
+import { cityDataset } from "@/lib/data";
 import { calculateSnapshot, simulateScenario } from "@/lib/simulation";
-import { CATEGORIES, type Category, type ScenarioSelection, type SimulationResult, type AIAnalysis } from "@/types/city";
+import { initiativeCopy } from "@/components/initiative-copy";
+import { CATEGORIES, type Category, type Initiative, type ScenarioSelection, type SimulationResult, type AIAnalysis } from "@/types/city";
 
-const labels: Record<Category, string> = { transport: "Transport", greening: "Green spaces", social: "Social infrastructure", safety: "Public safety", services: "City services" };
-const descriptions: Record<Category, string> = { transport: "Make the everyday journey better.", greening: "Give the city room to breathe.", social: "Build opportunity closer to home.", safety: "Help every neighborhood feel safer.", services: "Keep the essentials working for everyone." };
-const icons = { transport: Bus, greening: Leaf, social: Building2, safety: ShieldCheck, services: Waves };
+const labels: Record<Category, string> = { transport: "Транспорт", greening: "Озеленение", social: "Социальная инфраструктура", safety: "Безопасность", services: "Городские сервисы" };
 const baseline = calculateSnapshot(cityDataset.districts);
-const number = (value: number) => value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+const number = (value: number) => value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
+const score = (value: number) => value.toLocaleString("ru-RU", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const signed = (value: number) => `${value > 0 ? "+" : ""}${number(Math.round(value * 10) / 10)}`;
+const money = (value: number) => `${number(value)} млн ₸`;
 
-function Skyline() {
-  return <svg className="skyline" viewBox="0 0 610 200" fill="none" aria-hidden="true"><path d="M0 184H610" stroke="currentColor" opacity=".25"/><g stroke="currentColor" strokeWidth="1.4"><path d="M26 183V105H75V183M34 113H67M34 125H67M34 137H67M34 149H67M34 161H67M84 183V80L114 62L144 80V183M92 91H136M92 106H136M92 121H136M92 136H136M92 151H136M92 166H136M153 183V133H196V183M164 143V173M175 143V173M186 143V173"/><path d="M224 183L237 104M255 183L242 104M231 140H249M227 162H253M232 111H247M238 72V38M242 72V38"/><circle cx="240" cy="87" r="21" fill="#d4e6b7"/><path d="M224 73L255 99M220 85L250 106M230 68L260 94M220 93L250 68M228 104L260 80" opacity=".4"/><path d="M277 183V113L311 89L345 113V183M289 119V174M301 109V174M313 109V174M325 117V174M357 183L412 65L467 183ZM385 183L412 65L438 183M370 157H455M382 131H443M394 105H431M476 183V121H515V183M485 131H506M485 143H506M485 155H506M485 167H506M527 183V94H576V183M535 105H568M535 119H568M535 133H568M535 147H568M535 161H568"/><path d="M8 183V158M0 164C0 147 18 147 18 164C18 177 0 177 0 164ZM590 183V158M581 164C581 147 601 147 601 164C601 177 581 177 581 164Z"/></g><circle cx="443" cy="36" r="17" fill="#d4e6b7" opacity=".7"/></svg>;
+function Effects({ initiative }: { initiative: Initiative }) {
+  return <ul className="effects" aria-label="Эффекты мероприятия">
+    {CATEGORIES.flatMap(category => {
+      const impacts = initiative.impacts.filter(impact => impact.metric === category);
+      if (!impacts.length) return [];
+      const low = Math.min(...impacts.map(impact => impact.delta));
+      const high = Math.max(...impacts.map(impact => impact.delta));
+      return <li key={category}><span>{labels[category]}</span>
+        <strong className={low < 0 ? "negative" : "positive"}>{low === high ? signed(low) : `${signed(low)}…${signed(high)}`} п.</strong>
+      </li>;
+    })}
+  </ul>;
 }
 
 export default function Home() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => { setReady(true); }, []);
   const [selection, setSelection] = useState<Partial<ScenarioSelection>>({});
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
@@ -24,8 +38,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState<SimulationResult | null>(null);
   const [active, setActive] = useState<Category>("transport");
-  const [view, setView] = useState<"plan" | "districts">("plan");
+
   const [validation, setValidation] = useState("");
+  const [notice, setNotice] = useState("");
   const generation = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const resultsRef = useRef<HTMLElement>(null);
@@ -34,8 +49,8 @@ export default function Home() {
   const remaining = cityDataset.budget - spent;
   const count = selected.length;
   function invalidate() { generation.current++; controller.current?.abort(); setLoading(false); setResult(null); setAnalysis(null); setAiError(""); setValidation(""); }
-  function choose(category: Category, id: string) { invalidate(); setSelection(previous => ({ ...previous, [category]: id })); }
-  function reset() { invalidate(); setSelection({}); setActive("transport"); }
+  function choose(category: Category, id: string) { setNotice(result ? "Решения изменены. Рассчитайте сценарий заново." : ""); invalidate(); setSelection(previous => ({ ...previous, [category]: id })); }
+  function reset() { invalidate(); setSelection({}); setActive("transport"); setNotice("Решения сброшены. Доступен весь бюджет."); }
   async function explain(next: SimulationResult) {
     const request = ++generation.current;
     controller.current?.abort(); controller.current = new AbortController();
@@ -52,40 +67,123 @@ export default function Home() {
   function run() {
     const next = simulateScenario(cityDataset, selection as ScenarioSelection);
     if (!next.valid) { setValidation(next.validationErrors.join(" ")); return; }
-    setResult(next); setValidation(""); void explain(next);
-    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    setResult(next); setValidation(""); setNotice(""); void explain(next);
+    setTimeout(() => { resultsRef.current?.focus({ preventScroll: true }); resultsRef.current?.scrollIntoView({ block: "start" }); }, 50);
   }
 
-  return <div className="app-shell">
-    <aside className="sidebar">
-      <a href="#" className="brand"><span className="brand-mark"><Landmark size={23}/></span><span>akim<span className="brand-dot">.</span><small>ASTANA CITY LAB</small></span></a>
-      <div className="workspace-label">YOUR WORKSPACE</div>
-      <nav aria-label="Main navigation"><button className={view === "plan" ? "nav-item current" : "nav-item"} onClick={() => setView("plan")}><Landmark size={18}/>City simulator<ChevronRight size={15}/></button><button className={view === "districts" ? "nav-item current" : "nav-item"} onClick={() => setView("districts")}><MapPin size={18}/>District overview</button></nav>
-      <div className="sidebar-city"><div className="city-dot"/>ASTANA, KAZAKHSTAN<p>A better city starts<br/>with your decisions.</p><span>51.1694° N · 71.4491° E</span></div>
-      <div className="sidebar-bottom"><span className="avatar">A</span><div>Acting Akim<small>Your five-hour term</small></div><span className="term-dot"/></div>
-    </aside>
-    <div className="main-shell">
-      <header className="topbar"><div className="breadcrumbs">City lab <ChevronRight size={13}/><strong>{view === "plan" ? "Simulator" : "District overview"}</strong></div><span className="demo-pill"><span/>SIMULATION MODE</span></header>
-      <main>
-        <section className="hero"><div className="eyebrow"><span/>АКИМ НА 5 ЧАСОВ · THE CITY IS IN YOUR HANDS</div><h1>Five decisions.<br/><span>One better Astana.</span></h1><p>You’re the Akim for five hours. Invest your budget, balance<br className="desktop-break"/> your priorities, and see the city you could create.</p><Skyline/><div className="hero-footer"><span><MapPin size={14}/>Astana, Kazakhstan</span><span>5 priorities <i/> 1 shared future</span></div></section>
-        <section className="baseline-strip" aria-label="Starting conditions"><div className="baseline-title"><span className="eyebrow">YOUR STARTING POINT</span><div><strong>{number(baseline.overall)}</strong><span>/ 100<small>Astana Quality of Life</small></span></div></div><div className="baseline-metrics">{CATEGORIES.map(category => { const Icon = icons[category]; return <div key={category}><span><Icon size={15}/>{labels[category]}</span><strong>{number(baseline.byCategory[category])}</strong><div className="mini-track"><i style={{ width: `${baseline.byCategory[category]}%` }}/></div></div>; })}</div></section>
-        {view === "districts" ? <section className="district-panel panel"><div className="section-heading"><div><span className="eyebrow">THE CITY AT A GLANCE</span><h2>Every neighborhood matters.</h2></div><button className="text-button" onClick={() => setView("plan")}>Build your plan <ArrowRight size={16}/></button></div><p className="muted">Starting indicators for each district. All scores are on a 0–100 scale.</p><DistrictTable snapshot={baseline}/><p className="data-note">{DATASET_NOTE}</p></section> : <>
-        <div className="workspace-grid"><section className="decision-panel"><div className="section-heading"><div><span className="eyebrow">01 / BUILD YOUR CITY PLAN</span><h2>Where will you make a difference?</h2><p>Choose one initiative in each priority. Make every tenge count.</p></div><span className="step-count">{count}<span> / 5 selected</span></span></div>
-          <div className="category-tabs" role="group" aria-label="Investment category">{CATEGORIES.map((category, index) => { const Icon = icons[category]; return <button key={category} id={`tab-${category}`} aria-controls={`panel-${category}`} aria-pressed={active === category} className={active === category ? "category-tab active" : "category-tab"} onClick={() => setActive(category)}><span className="tab-icon">{selection[category] ? <Check size={18}/> : <Icon size={19}/>}</span><span>{labels[category]}</span><small>0{index + 1}</small></button>; })}</div>
-          <div className="choices-panel" role="region" id={`panel-${active}`} aria-labelledby={`tab-${active}`}><div className="choices-title"><div><h3>{labels[active]}</h3><p>{descriptions[active]}</p></div><span>SELECT ONE</span></div><div className="choices">{cityDataset.initiatives.filter(item => item.category === active).map((item, index) => { const checked = selection[active] === item.id; const previous = selected.find(choice => choice.category === active)?.cost || 0; const blocked = spent - previous + item.cost > cityDataset.budget; const affected = new Set(item.impacts.map(impact => impact.districtId)).size; return <button key={item.id} className={`choice ${checked ? "selected" : ""}`} onClick={() => choose(active, item.id)} disabled={blocked} aria-pressed={checked}><span className="choice-top"><span className="choice-tag">OPTION 0{index + 1}</span><span className="radio">{checked && <Check size={13}/>}</span></span><strong>{item.name}</strong><p>{item.description}</p><span className="choice-impact"><MapPin size={12}/>{affected} districts impacted</span><span className="choice-bottom"><span><b>{number(item.cost)}</b> M ₸</span><span>{blocked ? "Over budget" : checked ? "Selected" : "Choose initiative"}{checked ? <Check size={14}/> : <ArrowUpRight size={14}/>}</span></span></button>; })}</div><div className="choice-footnote"><CircleHelp size={14}/><span>Each investment affects city indicators. Some benefits come with trade-offs.</span></div>{CATEGORIES.indexOf(active) < 4 && <button className="next-category" onClick={() => setActive(CATEGORIES[CATEGORIES.indexOf(active) + 1])}>Next: {labels[CATEGORIES[CATEGORIES.indexOf(active) + 1]]}<ArrowRight size={15}/></button>}</div>
-        </section>
-        <aside className="budget-card"><div className="budget-heading"><span className="eyebrow">YOUR CITY BUDGET</span><span className="fixed-label">FIXED</span></div><div className="budget-total">{number(cityDataset.budget)}<span> M ₸</span></div><p className="budget-caption">Million tenge · same start for everyone</p><div className="budget-progress"><i style={{width: `${Math.min(100, spent / cityDataset.budget * 100)}%`}}/></div><div className="budget-stats"><span>Allocated<strong>{number(spent)} M ₸</strong></span><span>Remaining<strong className={remaining < 0 ? "negative" : "positive"}>{number(remaining)} M ₸</strong></span></div><div className="plan-list"><div className="plan-list-title">YOUR PLAN<span>{count} OF 5</span></div>{CATEGORIES.map(category => { const item = selected.find(choice => choice.category === category); return <div className="plan-item" key={category}><span className={item ? "plan-check checked" : "plan-check"}>{item ? <Check size={12}/> : <span/>}</span><div><strong>{labels[category]}</strong><small>{item ? item.name : "Choose an initiative"}</small></div><span>{item ? `${item.cost}` : "—"}</span></div>; })}</div><button className="primary-button" onClick={run} disabled={count !== 5 || remaining < 0 || loading}>{loading ? <LoaderCircle className="spin" size={17}/> : <Sparkles size={17}/>}Simulate my city<ArrowRight size={17}/></button><p className="submit-hint">{count < 5 ? `${5 - count} more ${5 - count === 1 ? "decision" : "decisions"} to see your impact` : "Your plan is ready. See what changes."}</p><button className="reset-button" onClick={reset} disabled={!count}><RotateCcw size={13}/>Reset decisions</button>{validation && <p role="alert" className="error-text">{validation}</p>}</aside></div>
-        {result && <section className="results-section" ref={resultsRef} aria-label="Simulation results"><div className="section-heading"><div><span className="eyebrow">02 / YOUR CITY, REIMAGINED</span><h2>Here’s the difference you make.</h2><p>Calculated from your decisions. Explained by your AI advisor.</p></div><button className="secondary-button" onClick={() => setSaved(result)}><GitCompareArrows size={16}/>{saved ? "Replace saved A" : "Save as scenario A"}</button></div><div className="results-grid"><div className="result-score panel"><span className="eyebrow">PROJECTED QUALITY OF LIFE</span><div className="score-large">{number(result.projected.overall)}<span>/100</span></div><span className={`delta-pill ${result.delta < 0 ? "down" : ""}`}>{result.delta >= 0 ? <ArrowUpRight size={16}/> : <ArrowDownRight size={16}/>} {result.delta > 0 ? "+" : ""}{number(result.delta)} points</span><p>From a baseline of {number(result.baseline.overall)}.<br/>Five priorities. One citywide score.</p><div className="deterministic-note"><ShieldCheck size={15}/>Calculated by code, never by AI</div></div><div className="metric-results panel"><div className="chart-heading"><h3>Your impact by priority</h3><span><i/>Before <i/>After</span></div>{CATEGORIES.map(category => <div className="metric-row" key={category}><div><span>{labels[category]}</span><span>{number(result.baseline.byCategory[category])}<ArrowRight size={12}/><b>{number(result.projected.byCategory[category])}</b></span></div><div className="comparison-bars"><i style={{width: `${result.baseline.byCategory[category]}%`}}/><i style={{width: `${result.projected.byCategory[category]}%`}}/></div></div>)}</div></div>
-          {saved && <div className="comparison panel"><div className="chart-heading"><h3><GitCompareArrows size={18}/> Scenario comparison</h3><button className="icon-button" aria-label="Clear saved scenario" onClick={() => setSaved(null)}><X size={18}/></button></div><div className="table-scroll"><table><thead><tr><th>Indicator</th><th>Saved A</th><th>Current B</th><th>Change</th></tr></thead><tbody>{[{label: "Quality of life", a: saved.projected.overall, b: result.projected.overall}, ...CATEGORIES.map(category => ({label: labels[category], a: saved.projected.byCategory[category], b: result.projected.byCategory[category]})), {label: "Budget spent · M ₸", a: saved.budget.spent, b: result.budget.spent}].map(row => <tr key={row.label}><td>{row.label}</td><td>{number(row.a)}</td><td>{number(row.b)}</td><td>{row.b > row.a ? "+" : ""}{number(Math.round((row.b - row.a) * 10) / 10)}</td></tr>)}</tbody></table></div><p className="muted">Saved in this session. Change your decisions and simulate again to compare.</p></div>}
-          <div className="ai-panel panel"><div className="chart-heading"><h3><Sparkles size={19}/>Your AI city advisor</h3><span className="ai-label">EXPLANATION, NOT CALCULATION</span></div><div aria-live="polite">{loading && <div className="ai-loading"><LoaderCircle size={22} className="spin"/><div><strong>Looking at the bigger picture…</strong><p>Your score is ready. Your advisor is exploring benefits, risks, and trade-offs.</p></div></div>}{aiError && <div className="ai-error"><strong>Your city results are ready. AI analysis is unavailable.</strong><p>{aiError}</p><button className="secondary-button" onClick={() => void explain(result)}><RotateCcw size={14}/>Retry AI analysis</button></div>}{analysis && <><p className="ai-summary">{analysis.summary}</p><div className="analysis-columns">{[{title: "What works well", items: analysis.strengths}, {title: "Risks to watch", items: analysis.risks}, {title: "The trade-offs", items: analysis.tradeoffs}].map(group => <div key={group.title}><h4>{group.title}</h4><ul>{group.items.map((text, i) => <li key={i}>{text}</li>)}</ul></div>)}</div><div className="recommendations"><h4>Your next moves</h4>{analysis.recommendations.map((item, i) => <div key={i}><span>0{i + 1}</span><div><strong>{item.title}</strong><p>{item.rationale}</p></div></div>)}</div></>}</div></div><details className="district-details panel"><summary>Explore the impact in each district <ChevronRight size={18}/></summary><DistrictTable snapshot={result.projected}/></details></section>}
-        </>}
-        <footer className="page-footer"><span><Landmark size={14}/>Built for a better tomorrow.</span><p>{DATASET_NOTE} Budget and outcomes are virtual.</p><span>HACKALEM · CITY LAB</span></footer>
-      </main>
+  const activeIndex = CATEGORIES.indexOf(active);
+  const activeChoice = selected.find(item => item.category === active);
+  function removeChoice() {
+    invalidate();
+    setSelection(previous => { const next = { ...previous }; delete next[active]; return next; });
+    setNotice(`Выбор в направлении «${labels[active]}» снят.`);
+  }
+
+  return <div className="simulator" lang="ru">
+    <a className="skip-link" href="#decisions">Перейти к решениям</a>
+    <header className="page-header">
+      <div><p className="eyebrow">HACKALEM · АСТАНА</p><h1>Аким на 5 часов</h1></div>
+      <p>Распределите бюджет между пятью направлениями и оцените, как решения изменят качество жизни.</p>
+    </header>
+    <div className="budget-bar" aria-label="Бюджет и готовность сценария">
+      <div className="budget-main"><span>Осталось</span><strong className={remaining < 0 ? "negative" : ""}>{money(remaining)}</strong><small className="budget-limit">из {money(cityDataset.budget)}</small></div>
+      <div className="budget-allocation"><span>Выделено {money(spent)} из {number(cityDataset.budget)}</span>
+        <progress value={Math.min(spent, cityDataset.budget)} max={cityDataset.budget} aria-label="Выделенная доля бюджета" />
+      </div>
+      <div className="run-control"><span className="readiness" aria-live="polite">{count === 5 ? "5 из 5 · можно рассчитать" : `${count} из 5 решений выбрано`}</span>
+        <button className="primary-button" onClick={run} disabled={count !== 5 || remaining < 0 || loading} aria-describedby="plan-instruction">
+          {loading ? <LoaderCircle size={17} className="spin" /> : <ArrowRight size={17} />}{loading ? "Получаем объяснение…" : "Рассчитать сценарий"}
+        </button>
+      </div>
     </div>
+    <main>
+      <section className="baseline-section" aria-labelledby="baseline-heading">
+        <div className="section-heading"><div><p className="eyebrow">01 / ИСХОДНЫЕ УСЛОВИЯ</p><h2 id="baseline-heading">Город до ваших решений</h2></div>
+          <p className="dataset-note">Учебные данные · одинаковые условия для всех</p>
+        </div>
+        <div className="baseline-grid">
+          <div className="baseline-score"><span>Astana Quality of Life Score</span><strong>{score(baseline.overall)}<small> / 100</small></strong></div>
+          {CATEGORIES.map(category => <div className="baseline-metric" key={category}><span>{labels[category]}</span><strong>{score(baseline.byCategory[category])}</strong><div className="bar-track" aria-hidden="true"><i style={{ width: `${baseline.byCategory[category]}%` }} /></div></div>)}
+        </div>
+        <p className="muted">Индекс 0–100: выше — лучше. Пять направлений имеют равный вес.</p>
+        <details className="score-definition"><summary>Как рассчитывается рейтинг? <ChevronDown size={15} /></summary>
+          <p>AQoL — индекс качества жизни от 0 до 100. Чем выше значение, тем лучше показатели модели. Пять направлений имеют равный вес; внутри каждого учитывается население районов. Итог округляется до одной десятой. Это учебная модель, а не официальный рейтинг Астаны.</p>
+        </details>
+        <details className="district-details"><summary>Исходные показатели {cityDataset.districts.length} районов <ChevronDown size={15} /></summary><DistrictTable snapshot={baseline} /></details>
+      </section>
+
+      <section className="decisions-section" id="decisions" aria-labelledby="decisions-heading">
+        <div className="section-heading"><div><p className="eyebrow">02 / ВАШИ РЕШЕНИЯ</p><h2 id="decisions-heading">По одному мероприятию в каждом направлении</h2></div>
+          <button className="text-button" onClick={reset} disabled={!count}><RotateCcw size={15} />Сбросить решения</button>
+        </div>
+        <p id="plan-instruction" className="section-intro" role="status">{count < 5 ? `Выбрано ${count} из 5. Для расчёта заполните все направления.` : "Все направления заполнены. Можно рассчитать сценарий или изменить выбор."}</p>
+        {notice && <p className="status-message" role="status">{notice}</p>}
+        {validation && <p className="error-message" role="alert">{validation}</p>}
+        <div className="category-tabs" role="group" aria-label="Пять направлений">
+          {CATEGORIES.map((category, index) => <button id={`tab-${category}`} key={category} className={`category-tab ${active === category ? "active" : ""}`} disabled={!ready} aria-pressed={active === category} aria-controls="initiative-choices" onClick={() => setActive(category)}>
+            <span className="category-number">{selection[category] ? <Check size={16} /> : index + 1}</span><span>{labels[category]}<small>{selection[category] ? "Выбрано" : "Нужен выбор"}</small></span>
+          </button>)}
+        </div>
+        <div className="choices-heading"><h3>{labels[active]}</h3><span>Шаг {activeIndex + 1} из 5</span></div>
+        <div className="choices" id="initiative-choices" role="group" aria-labelledby={`tab-${active}`}>
+          {cityDataset.initiatives.filter(item => item.category === active).map(item => {
+            const checked = selection[active] === item.id;
+            const projectedSpend = spent - (activeChoice?.cost || 0) + item.cost;
+            const blocked = projectedSpend > cityDataset.budget;
+            const copy = initiativeCopy(item);
+            return <button key={item.id} className={`choice ${checked ? "selected" : ""}`} disabled={blocked || !ready} aria-pressed={checked} onClick={() => choose(active, item.id)}>
+              <span className="choice-price">{money(item.cost)}<span className="choice-check" aria-hidden="true">{checked && <Check size={16} />}</span></span>
+              <strong className="choice-name">{copy.name}</strong><p>{copy.description}</p><Effects initiative={item} />
+              <span className={blocked ? "choice-state negative" : "choice-state"}>{!ready ? "Подготовка…" : blocked ? `Не хватает ${money(projectedSpend - cityDataset.budget)}` : checked ? "Выбрано" : "Выбрать мероприятие"}{!blocked && (checked ? <Check size={16} /> : <ArrowRight size={16} />)}</span>
+            </button>;
+          })}
+        </div>
+        <div className="choice-actions"><p>Эффекты указаны в пунктах показателей районов до ограничения 0–100. Диапазон отражает различия между затронутыми районами.</p>
+          <div>{activeChoice && <button className="text-button" onClick={removeChoice}>Снять выбор</button>}{activeIndex < 4 && <button className="secondary-button" onClick={() => setActive(CATEGORIES[activeIndex + 1])}>Далее: {labels[CATEGORIES[activeIndex + 1]]}<ArrowRight size={16} /></button>}</div>
+        </div>
+        <details className="plan-details"><summary>Ваш план · {count} из 5 решений <ChevronDown size={16} /></summary>
+          <ul className="plan-list">{CATEGORIES.map(category => {
+            const item = selected.find(initiative => initiative.category === category);
+            return <li key={category}><div><span>{labels[category]}</span><strong>{item ? initiativeCopy(item).name : "Мероприятие не выбрано"}</strong></div><span>{item ? money(item.cost) : "—"}</span><button className="text-button" onClick={() => { setActive(category); document.getElementById("decisions")?.scrollIntoView({ block: "start" }); }} aria-label={`Изменить: ${labels[category]}`}>{item ? "Изменить" : "Выбрать"}</button></li>;
+          })}</ul>
+        </details>
+      </section>
+
+      {result && <section className="results-section" ref={resultsRef} tabIndex={-1} aria-labelledby="results-heading">
+        <div className="section-heading"><div><p className="eyebrow">03 / ПОСЛЕДСТВИЯ</p><h2 id="results-heading">Результат сценария</h2></div><button className="secondary-button" onClick={() => setSaved(result)}>{saved ? "Обновить сохранённый A" : "Сохранить как сценарий A"}</button></div>
+        <div className="score-result" aria-label="Изменение Astana Quality of Life Score">
+          <div><span>До решений</span><strong>{score(result.baseline.overall)}</strong></div><ArrowRight className="score-arrow" aria-hidden="true" />
+          <div className="projected-score"><span>После решений</span><strong>{score(result.projected.overall)}</strong></div>
+          <div className="score-change"><span>Изменение AQoL</span><strong className={result.delta < 0 ? "negative" : "positive"}>{signed(result.delta)}<small> п.</small></strong></div>
+        </div>
+        <p className="result-caption">Шкала 0–100. Расчёт модели по вашим решениям. Выделено {money(result.budget.spent)}, осталось {money(result.budget.remaining)}.</p>
+        <div className="metrics-results"><div className="metrics-heading"><h3>Что изменилось по направлениям</h3><span><i />До <i />После</span></div>
+          {CATEGORIES.map(category => {
+            const before = result.baseline.byCategory[category], after = result.projected.byCategory[category];
+            return <div className="metric-row" key={category}><span>{labels[category]}</span><div className="comparison-bars" aria-hidden="true"><i style={{ width: `${before}%` }} /><i style={{ width: `${after}%` }} /></div><span className="metric-values">{score(before)} → <strong>{score(after)}</strong></span><strong className={after < before ? "negative" : "positive"}>{signed(after - before)}</strong></div>;
+          })}
+        </div>
+        <section className="consequences" aria-labelledby="consequences-heading"><h3 id="consequences-heading">Какие решения повлияли на результат</h3><p>Эффекты из исходных данных модели. Они складываются по районам; побочные потери могут частично перекрывать улучшения.</p>
+          <div className="consequence-list">{result.selectedInitiatives.map(item => <div className="consequence-row" key={item.id}><div><span className="eyebrow">{labels[item.category]} · {money(item.cost)}</span><h4>{initiativeCopy(item).name}</h4><p>{initiativeCopy(item).description}</p></div><Effects initiative={item} /></div>)}</div>
+        </section>
+        <details className="district-details"><summary>По районам: до → после <ChevronDown size={16} /></summary><DistrictTable snapshot={result.projected} before={result.baseline} /></details>
+        {saved && <section className="comparison" aria-labelledby="comparison-heading"><div className="section-heading"><h3 id="comparison-heading">Сравнение сценариев</h3><button className="text-button" onClick={() => setSaved(null)}>Убрать сохранённый A</button></div>
+          <div className="table-scroll" role="region" aria-label="Таблица сравнения сценариев" tabIndex={0}><table><thead><tr><th scope="col">Показатель</th><th scope="col">Сохранённый A</th><th scope="col">Текущий B</th><th scope="col">B − A</th></tr></thead><tbody>{[{ label: "AQoL", a: saved.projected.overall, b: result.projected.overall }, ...CATEGORIES.map(category => ({ label: labels[category], a: saved.projected.byCategory[category], b: result.projected.byCategory[category] })), { label: "Выделено, млн ₸", a: saved.budget.spent, b: result.budget.spent }].map(row => <tr key={row.label}><th scope="row">{row.label}</th><td>{number(row.a)}</td><td>{number(row.b)}</td><td>{signed(row.b - row.a)}</td></tr>)}</tbody></table></div>
+          <p className="muted">Сценарий A сохранён до перезагрузки страницы. Измените решения и повторите расчёт для сравнения.</p>
+        </section>}
+        <section className="analysis-section" aria-labelledby="analysis-heading"><h3 id="analysis-heading">Объяснение и рекомендации</h3><p className="muted">Комментарий AI к рассчитанному сценарию. Числа в таблицах остаются основным результатом.</p>
+          <div aria-live="polite" aria-busy={loading}>
+            {loading && <div className="loading-state"><LoaderCircle size={22} className="spin" /><div><strong>Готовим объяснение решений…</strong><p>Рейтинг уже рассчитан. Ожидаем оценку сильных сторон, рисков и компромиссов.</p></div></div>}
+            {aiError && <div className="error-state" role="alert"><strong>Объяснение пока недоступно. Расчёт сохранён.</strong><p>{aiError.includes("OPENAI_API_KEY") ? "Для команды: подключите ключ сервиса на сервере и перезапустите приложение. Затем повторите запрос." : "Не удалось получить ответ сервиса. Повторите запрос; пересчитывать сценарий не нужно."}</p><button className="secondary-button" onClick={() => void explain(result)}><RotateCcw size={15} />Повторить объяснение</button><details className="technical-detail"><summary>Подробности ошибки</summary><p>{aiError}</p></details></div>}
+            {analysis && <><p className="analysis-summary">{analysis.summary}</p><div className="analysis-columns">{[{ title: "Сильные стороны", items: analysis.strengths }, { title: "Риски", items: analysis.risks }, { title: "Компромиссы", items: analysis.tradeoffs }].map(group => <div key={group.title}><h4>{group.title}</h4><ul>{group.items.map((text, index) => <li key={index}>{text}</li>)}</ul></div>)}</div><div className="recommendations"><h4>Что пересмотреть</h4>{analysis.recommendations.map((item, index) => <div key={index}><strong>{item.title}</strong><p>{item.rationale}</p></div>)}</div></>}
+          </div>
+        </section>
+      </section>}
+      <footer>Учебный симулятор. Население, исходные показатели, стоимость и эффекты мероприятий синтетические. Это не прогноз и не официальная статистика Астаны.</footer>
+    </main>
   </div>;
 }
 
-function DistrictTable({ snapshot }: { snapshot: SimulationResult["projected"] }) {
-  return <div className="table-scroll"><table><thead><tr><th>District</th>{CATEGORIES.map(category => <th key={category}>{labels[category]}</th>)}</tr></thead><tbody>{snapshot.districts.map(district => <tr key={district.districtId}><td>{cityDataset.districts.find(item => item.id === district.districtId)?.name || district.districtId}</td>{CATEGORIES.map(category => <td key={category}>{number(district.metrics[category])}</td>)}</tr>)}</tbody></table></div>;
+function DistrictTable({ snapshot, before }: { snapshot: SimulationResult["projected"]; before?: SimulationResult["baseline"] }) {
+  return <div className="table-scroll" role="region" aria-label="Показатели районов" tabIndex={0}><table><thead><tr><th scope="col">Район</th>{CATEGORIES.map(category => <th scope="col" key={category}>{labels[category]}</th>)}</tr></thead><tbody>{snapshot.districts.map(district => <tr key={district.districtId}><th scope="row">{cityDataset.districts.find(item => item.id === district.districtId)?.name || district.districtId}</th>{CATEGORIES.map(category => <td key={category}>{before && <span className="muted">{number(before.districts.find(item => item.districtId === district.districtId)!.metrics[category])} → </span>}{number(district.metrics[category])}</td>)}</tr>)}</tbody></table></div>;
 }
-
