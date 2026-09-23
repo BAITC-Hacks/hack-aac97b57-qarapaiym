@@ -107,7 +107,7 @@ export async function analyzeScenario(result: SimulationResult): Promise<AIAnaly
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25_000);
   const facts = explanationFacts(result);
-  const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4.1';
+  const model = process.env.OPENAI_MODEL?.trim() || 'gpt-5.6-luna';
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST', signal: controller.signal,
