@@ -1,5 +1,9 @@
 # Verification record
 
+## Release audit after documentation and model-default update
+
+The earlier results below describe a separate clean checkout before the current documentation and model-default changes. In the current workspace, `npm test`, `npm run typecheck`, and `npm run build` could not start because `npm` and Node.js are unavailable on `PATH` or in the standard Windows installation locations. The current revision therefore has no fresh test, typecheck, build, or clean-clone pass. Run the three commands from the README on a machine with Node.js before marking this release verified. The OpenAI model change has not been verified with a live provider response.
+
 Verified on 2026-09-23 with Windows, Node.js 24.12.0, npm 11.6.2.
 
 ## Fresh checkout
