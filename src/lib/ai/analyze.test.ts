@@ -7,7 +7,10 @@ import { CATEGORIES, type ScenarioSelection } from '@/types/city';
 const analysis = { summary: 'Synthetic scenario improves supplied metrics.', strengths: ['Transport improves.'], risks: ['Weak metrics remain.'], tradeoffs: ['Spent funds cannot be reused.'], recommendations: [{ title: 'Review transport', rationale: 'Compare supplied values.', category: 'transport' }] };
 const selection = Object.fromEntries(CATEGORIES.map(category => [category, [...cityDataset.initiatives].filter(item => item.category === category).sort((a,b) => a.cost-b.cost)[0].id])) as ScenarioSelection;
 const result = simulateScenario(cityDataset, selection);
-function provider(value: unknown = analysis) { return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(value) }] }] }); }
+const ranked = [...CATEGORIES].sort((a,b) => result.projected.byCategory[b] - result.projected.byCategory[a]);
+const gains = [...CATEGORIES].sort((a,b) => (result.projected.byCategory[b]-result.baseline.byCategory[b]) - (result.projected.byCategory[a]-result.baseline.byCategory[a]));
+const evidence = { budgetSpent: result.budget.spent, budgetRemaining: result.budget.remaining, aqol: result.projected.overall, highestCategory: ranked[0], lowestCategory: ranked[4], largestGainCategory: gains[0], initiativeIds: result.selectedInitiatives.map(i=>i.id) };
+function provider(value: unknown = {...analysis, evidence}) { return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(value) }] }] }); }
 function request(value: unknown) { return new Request('http://localhost/api/analyze', { method: 'POST', body: JSON.stringify(value) }); }
 describe('AI boundary', () => {
   beforeEach(() => vi.stubEnv('OPENAI_API_KEY', 'test-key-not-real'));
@@ -24,6 +27,16 @@ describe('AI boundary', () => {
     const body = JSON.parse(mock.mock.calls[0][1].body);
     expect(body.text.format.strict).toBe(true); expect(body.store).toBe(false);
     expect(JSON.parse(body.input).scenario).toEqual(result);
+    expect(JSON.parse(body.input).facts.highestCategories).toContain(ranked[0]);
+    expect(body.text.format.schema.properties.evidence.properties.aqol.enum).toEqual([result.projected.overall]);
+  });
+  it('rejects incorrect scores, rankings and initiative evidence even with valid prose', async () => {
+    for (const bad of [undefined, {...evidence, aqol:99.9}, {...evidence, budgetSpent:1}, {...evidence, highestCategory:ranked[4]}, {...evidence, initiativeIds:Array(5).fill(evidence.initiativeIds[0])}]) {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(provider({...analysis, evidence:bad})));
+      const response = await POST(request(result));
+      expect(response.status).toBe(502);
+      expect((await response.json()).code).toBe('INVALID_AI_OUTPUT');
+    }
   });
   it('rejects tampering, missing choices, unknown IDs and bad bodies before provider call', async () => {
     const mock = vi.fn(); vi.stubGlobal('fetch', mock);
