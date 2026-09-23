@@ -1,117 +1,12 @@
-# hack-aac97b57-qarapaiym
+# HackAlem — «Аким на 5 часов» 3-Agent Pack
 
-## Official Case
+Start here:
 
-PASTE THE EXACT OFFICIAL CASE HERE WITHOUT REWRITING IT.
+1. `CASE.md`
+2. `docs/ARCHITECTURE_CONTRACT.md`
+3. `ACCEPTANCE_TESTS.md`
+4. Give each Codex session its matching prompt in `prompts/`
+5. Follow `MERGE_FLOW.md`
 
----
-
-## Mandatory Requirements
-
-1.
-2.
-3.
-4.
-5.
-
----
-
-## Target User
-
-Who uses this product?
-
----
-
-## Problem
-
-What concrete problem does the user have?
-
----
-
-## Our Solution
-
-Describe the solution in 3–5 sentences.
-
----
-
-## Main Demo Scenario
-
-### Initial State
-
-What exists before the scenario starts?
-
-### User Input
-
-Exactly what does the judge/user provide?
-
-### Processing
-
-What happens internally?
-
-### AI Responsibility
-
-What specifically requires AI?
-
-### Deterministic Responsibility
-
-What is calculated or validated by normal code?
-
-### Action
-
-What actual action/state change occurs?
-
-### Final Result
-
-What does the judge see?
-
----
-
-## Agentic Flow
-
-INPUT
-→ ANALYZE
-→ DECIDE
-→ ACT
-→ VERIFY
-
-Explain each stage briefly.
-
----
-
-## Data
-
-Required data:
-
-Source:
-
-Format:
-
-Demo data included:
-
----
-
-## Persistence
-
-What must be stored?
-
----
-
-## APIs
-
-OpenAI:
-
-NVIDIA:
-
-Other:
-
-Only include APIs that are actually necessary.
-
----
-
-## Out of Scope
-
-## We deliberately will NOT implement:
-
--
--
--
+Key architecture decision:
+**AQoL score is deterministic code. AI explains and recommends.**
