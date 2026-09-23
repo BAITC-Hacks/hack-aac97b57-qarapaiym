@@ -1,16 +1,13 @@
-# HackAlem Prompt Repo
+# HackAlem implementation workflow
 
-This repository contains only planning, prompts, rules, and evaluation documents.
+The active case is “Аким на 5 часов”. Read `CASE.md`, `docs/ARCHITECTURE_CONTRACT.md`, and `ACCEPTANCE_TESTS.md` together. The numbered legacy lead documents describe the original generic planning process; the case-specific prompts below define current ownership.
 
-## Start Here
-1. `AGENTS.md`
-2. `TEAM_WORKFLOW.md`
-3. Fill `CASE.md`
-4. Fill `ACCEPTANCE_TESTS.md`
-5. Member 1 uses `prompts/01_BUILD_LEAD.md`
-6. Member 2 uses `prompts/02_QA_LEAD.md`
-7. Member 3 uses `prompts/03_REPRODUCIBILITY_LEAD.md`
-8. Use `FEATURE_BACKLOG.md` + brainstorming prompts while Codex builds
-9. Use reviewer/final-audit prompts near the end
+| Branch | Role | Owned files |
+| --- | --- | --- |
+| `simulation` | Agent 1: deterministic engine | `src/types/city.ts`, `src/lib/data/`, `src/lib/simulation/`, `data/`, simulation tests |
+| `ui` | Agent 2: interface and visualizations | `src/app/page.tsx`, `src/app/globals.css`, `src/components/`, UI hooks |
+| `ai-docs` | Agent 3: AI and reproducibility | `src/app/api/analyze/`, `src/lib/ai/`, AI tests, `README.md`, `.env.example` |
 
-Do not start implementation until `CASE.md` and `ACCEPTANCE_TESTS.md` are coherent.
+Each agent works in its own Git worktree. Shared scaffold and dependency changes belong to the integration lead. See the matching `prompts/AGENT_*.md` and `MERGE_FLOW.md`.
+
+Merge the engine first, sync the AI and UI branches with main, then merge AI followed by UI. Run `npm test`, `npm run typecheck`, and `npm run build`, and exercise the complete interface. Never replace computed scores with model output or leave UI fixtures in the simulation path.
