@@ -13,7 +13,7 @@ npm run dev
 ```
 
 PowerShell also supports `Copy-Item .env.example .env.local`. Open http://localhost:3000. Set `OPENAI_API_KEY` in `.env.local` to enable real analysis. `OPENAI_MODEL` defaults to `gpt-4o-mini` and must support Structured Outputs on the Responses API. The API key is server-only; never prefix it with `NEXT_PUBLIC_`. Without a key the simulator works, and AI analysis reports a configuration error.
-
+  
 ```sh
 npm test
 npm run typecheck
