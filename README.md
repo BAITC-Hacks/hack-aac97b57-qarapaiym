@@ -19,7 +19,7 @@ npm run dev
 ```sh
 npm test
 npm run typecheck
-npm run build   
+npm run build
 npm start
 ```
 

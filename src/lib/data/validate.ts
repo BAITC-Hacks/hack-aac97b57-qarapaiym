@@ -35,10 +35,11 @@ export function validateDataset(value: unknown): asserts value is CityDataset {
     let breakdownUnits = 0;
     for (const rawItem of i.budgetBreakdown as unknown[]) {
       if (!object(rawItem) || !label(rawItem.id) || !label(rawItem.label) || !finite(rawItem.amount) || rawItem.amount < 0 || !Number.isSafeInteger(Math.round(rawItem.amount * 1_000_000))) fail("invalid budget item");
-      if (budgetItemIds.has(rawItem.id as string)) fail("duplicate budget item id");
-      budgetItemIds.add(rawItem.id as string);
-      if (rawItem.description !== undefined && typeof rawItem.description !== "string") fail("invalid budget item description");
-      breakdownUnits += Math.round((rawItem.amount as number) * 1_000_000);
+      const item = rawItem as Record<string, unknown>;
+      if (budgetItemIds.has(item.id as string)) fail("duplicate budget item id");
+      budgetItemIds.add(item.id as string);
+      if (item.description !== undefined && typeof item.description !== "string") fail("invalid budget item description");
+      breakdownUnits += Math.round((item.amount as number) * 1_000_000);
     }
     if (breakdownUnits !== Math.round((i.cost as number) * 1_000_000)) fail("budget breakdown must equal initiative cost");
     }
