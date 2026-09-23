@@ -50,9 +50,9 @@ The integration uses the [OpenAI Responses Structured Outputs format](https://de
 
 1. Open the app; note the starting budget and baseline.
 2. Attempt submission with a missing category: it must be blocked.
-3. Scenario A: choose `transport-bus`, `greening-trees`, `social-clinics`, `safety-lighting`, `services-water` (820 million virtual KZT). Run and record score/category metrics.
+3. Scenario A: choose `transport-bus`, `greening-trees`, `social-clinics`, `safety-lighting`, `services-water` (820 million virtual KZT). Run: AQoL is 64.6, up 11.4 from baseline 53.2. Use “Save as scenario A”.
 4. Request AI analysis with a configured key. Without a key verify the clear error while the calculated score remains visible.
-5. Scenario B: choose `transport-junctions`, `greening-parks`, `social-outreach`, `safety-community`, `services-waste` (650 million). Rerun and compare different scores and metrics.
+5. Scenario B: choose `transport-junctions`, `greening-parks`, `social-outreach`, `safety-community`, `services-waste` (650 million). Rerun: AQoL is 64.0, up 10.8. The comparison shows lower spending and stronger greening alongside lower scores in other categories. Saved comparisons last only for the current page session.
 6. Try an expensive combination: overspend must be blocked. Reload to verify the same initial conditions.
 
 Automated tests cover engine behavior and the API integration boundary using mocked provider responses: structured success, tampered inputs, missing key, bad output and timeout. Live AI success additionally requires a real API key; mock success does not prove provider availability. See `ACCEPTANCE_TESTS.md` for the full checklist.
