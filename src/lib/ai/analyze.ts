@@ -74,6 +74,7 @@ export async function analyzeScenario(result: SimulationResult): Promise<AIAnaly
         text: { format: { type: 'json_schema', name: 'city_analysis', strict: true, schema: analysisSchema } },
       }),
     });
+    if (response.status === 401 || response.status === 403) throw new AnalysisError(503, 'AI_CREDENTIALS_INVALID', 'AI credentials were rejected. Check OPENAI_API_KEY on the server. Your calculated result is unchanged.');
     if (!response.ok) throw new AnalysisError(502, 'AI_PROVIDER_ERROR', 'AI provider is unavailable. Your calculated result is unchanged. Please retry later.');
     const payload = await readBoundedJson(response, 100_000);
     if (!record(payload) || payload.status !== 'completed' || !Array.isArray(payload.output)) throw new Error('Incomplete response');
