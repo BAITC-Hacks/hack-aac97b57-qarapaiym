@@ -10,7 +10,7 @@ AI-симулятор для городского управленца, анал
 
 ```sh
 npm ci
-cp .env.example .env.local
+cp .env.example .env.local 
 npm run dev
 ```
 
