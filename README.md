@@ -4,7 +4,7 @@ A HackAlem city-management simulator: start with a fixed virtual budget and synt
 
 ## Run locally
 
-Install Node.js 22 LTS and npm. From a fresh clone:
+Install Node.js 24 LTS (or Node.js 22.12+) and npm. From a fresh clone:
 
 ```sh
 npm ci
@@ -38,7 +38,7 @@ No official dataset was supplied. Baselines, populations, costs and effects are 
 
 Exactly one initiative is required for each category: transport, greening, social, safety and services. Unknown IDs, category mismatch, missing choices and overspend are invalid. Costs are summed against the fixed budget. Effects are added to district metrics and clamped to 0–100.
 
-Category scores are population-weighted district averages when all district populations are usable; otherwise districts have equal weight. AQoL is the equal average of five category scores, rounded to one decimal. The baseline and projection share the same formula. The engine owns all calculations before an AI call.
+Category scores are population-weighted district averages when every population is present and their sum is positive; otherwise districts have equal weight. AQoL is the equal average of five unrounded category scores, then rounded to one decimal. Displayed category scores are also rounded to one decimal. The baseline and projection share the same formula. The engine owns all calculations before an AI call.
 
 ## AI endpoint
 
